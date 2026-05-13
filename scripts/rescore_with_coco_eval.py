@@ -117,6 +117,8 @@ def main() -> int:
         help="Block types to skip entirely. Stack multiple --skip flags.",
     )
     parser.add_argument("--hf-dataset", default=DEFAULT_HF_DATASET)
+    parser.add_argument("--adjusted", action="store_true", help="Also report adjusted F1 with adjacency merging.")
+    parser.add_argument("--gap-threshold", type=float, default=0.02, help="Adjacency gap threshold (fraction of max page dim).")
     args = parser.parse_args()
 
     remap: dict[str, str] = {}
@@ -155,11 +157,17 @@ def main() -> int:
     print(f"IoU threshold: {args.iou}\n", file=sys.stderr)
 
     result = aggregate(
-        pairs, iou_threshold=args.iou, class_remap=remap, skip_classes=frozenset(skip)
+        pairs,
+        iou_threshold=args.iou,
+        class_remap=remap,
+        skip_classes=frozenset(skip),
+        with_adjusted=args.adjusted,
+        gap_threshold=args.gap_threshold,
     )
 
-    # Per-class table sorted by F1 descending
+    # Strict per-class table sorted by F1 descending
     rows = sorted(result.per_class.values(), key=lambda r: -r.f1)
+    print(f"=== Strict F1 (IoU {args.iou:.2f}) ===")
     print(f"{'class':24s}  {'F1':>6s}  {'P':>6s}  {'R':>6s}  {'conf':>5s}  {'TP':>5s}  {'FP':>5s}  {'FN':>5s}  {'N_GT':>5s}")
     print("-" * 80)
     for r in rows:
@@ -171,6 +179,25 @@ def main() -> int:
         )
     print("-" * 80)
     print(f"{'MACRO (≥1 GT)':24s}  {result.macro_f1:>6.3f}  {result.macro_precision:>6.3f}  {result.macro_recall:>6.3f}")
+
+    if args.adjusted and result.adjusted_per_class is not None:
+        print(f"\n=== Adjusted F1 (with adjacency merging, gap ≤ {args.gap_threshold:.2%} of max page dim) ===")
+        print(f"  Splits resolved: {result.splits_resolved}, Merges resolved: {result.merges_resolved}")
+        adj_rows = sorted(result.adjusted_per_class.values(), key=lambda r: -r.f1)
+        print(f"{'class':24s}  {'F1':>6s}  {'P':>6s}  {'R':>6s}  {'conf':>5s}  {'TP':>5s}  {'FP':>5s}  {'FN':>5s}  {'N_GT':>5s}")
+        print("-" * 80)
+        for r in adj_rows:
+            if r.num_gt == 0:
+                continue
+            print(
+                f"{r.cls:24s}  {r.f1:>6.3f}  {r.precision:>6.3f}  {r.recall:>6.3f}  "
+                f"{r.best_conf:>5.2f}  {r.tp:>5d}  {r.fp:>5d}  {r.fn:>5d}  {r.num_gt:>5d}"
+            )
+        print("-" * 80)
+        print(
+            f"{'MACRO (≥1 GT)':24s}  {result.adjusted_macro_f1:>6.3f}  "
+            f"{result.adjusted_macro_precision:>6.3f}  {result.adjusted_macro_recall:>6.3f}"
+        )
     return 0
 
 

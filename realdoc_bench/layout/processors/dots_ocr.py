@@ -1,12 +1,12 @@
-"""Self-hosted OSS layout VLM: rednote-hilab/dots.ocr 1.5.
+"""Self-hosted OSS layout VLM: rednote-hilab/dots.mocr 1.5.
 
 Adapted from ``ocr-bench/processors/dots_ocr.py``. Hits a vLLM
-OpenAI-compatible endpoint (typically `vllm serve rednote-hilab/dots.ocr`
+OpenAI-compatible endpoint (typically `vllm serve rednote-hilab/dots.mocr`
 on awsl4 port 8000, exposed via SSH tunnel).
 
 Configure via env:
 - ``DOTS_OCR_BASE_URL`` — vLLM base URL, default ``http://localhost:8000/v1``
-- ``DOTS_OCR_MODEL`` — HF repo id, default ``rednote-hilab/dots.ocr``
+- ``DOTS_OCR_MODEL`` — HF repo id, default ``rednote-hilab/dots.mocr``
 - ``DOTS_OCR_API_KEY`` — optional bearer (default ``EMPTY``)
 
 The model emits a JSON array of ``{category, bbox=[l,t,r,b], text}``;
@@ -35,17 +35,20 @@ from realdoc_bench.shared.pricing.meter import parse_cost
 DOTS_PROMPT = (
     "Please output the layout information from the PDF image, including each "
     "layout element's bbox, its category, and the corresponding text content "
-    "within the bbox.\n"
-    "Bbox format: [x1, y1, x2, y2]\n"
-    "Layout Categories: ['Caption', 'Footnote', 'Formula', 'List-item', "
-    "'Page-footer', 'Page-header', 'Picture', 'Section-header', 'Table', "
-    "'Text', 'Title']\n"
-    "Format Rules:\n"
-    "- Picture: text should be omitted\n"
-    "- Formula: formatted as LaTeX\n"
-    "- Table: formatted as HTML\n"
-    "- All others: formatted as Markdown\n"
-    "Output as JSON array sorted by reading order."
+    "within the bbox.\n\n"
+    "1. Bbox format: [x1, y1, x2, y2]\n\n"
+    "2. Layout Categories: The possible categories are ['Caption', 'Footnote', "
+    "'Formula', 'List-item', 'Page-footer', 'Page-header', 'Picture', "
+    "'Section-header', 'Table', 'Text', 'Title'].\n\n"
+    "3. Text Extraction & Formatting Rules:\n"
+    "    - Picture: For the 'Picture' category, the text field should be omitted.\n"
+    "    - Formula: Format its text as LaTeX.\n"
+    "    - Table: Format its text as HTML.\n"
+    "    - All Others (Text, Title, etc.): Format their text as Markdown.\n\n"
+    "4. Constraints:\n"
+    "    - The output text must be the original text from the image, with no translation.\n"
+    "    - All layout elements must be sorted according to human reading order.\n\n"
+    "5. Final Output: The entire output must be a single JSON object.\n"
 )
 
 # Map dots-ocr categories to the realdoc-bench LayoutBlockType vocabulary,
@@ -89,15 +92,34 @@ def _parse_dots_array(text: str) -> list[dict[str, Any]]:
     if s.endswith("```"):
         s = s[:-3]
     s = s.strip()
+
+    def _extract_array(obj: Any) -> list[dict[str, Any]]:
+        if isinstance(obj, list):
+            return [e for e in obj if isinstance(e, dict)]
+        if isinstance(obj, dict):
+            # Newer dots prompt returns a single JSON object — look for the array under
+            # known keys, otherwise pick the first list-of-dicts value.
+            for key in ("layout", "blocks", "elements", "items"):
+                if isinstance(obj.get(key), list):
+                    return [e for e in obj[key] if isinstance(e, dict)]
+            for v in obj.values():
+                if isinstance(v, list) and v and isinstance(v[0], dict):
+                    return [e for e in v if isinstance(e, dict)]
+        return []
+
     try:
-        out = json.loads(s)
-        return out if isinstance(out, list) else []
+        return _extract_array(json.loads(s))
     except json.JSONDecodeError:
         lo, hi = s.find("["), s.rfind("]")
         if lo >= 0 and hi > lo:
             try:
-                out = json.loads(s[lo : hi + 1])
-                return out if isinstance(out, list) else []
+                return _extract_array(json.loads(s[lo : hi + 1]))
+            except json.JSONDecodeError:
+                pass
+        lo2, hi2 = s.find("{"), s.rfind("}")
+        if lo2 >= 0 and hi2 > lo2:
+            try:
+                return _extract_array(json.loads(s[lo2 : hi2 + 1]))
             except json.JSONDecodeError:
                 pass
     return []
@@ -128,9 +150,9 @@ def _dots_to_vlm_json(elements: list[dict[str, Any]], width: int, height: int) -
     return {"chunks": [{"blocks": blocks}]}
 
 
-@register_layout_processor("dots_ocr", version="rednote-hilab/dots.ocr-1.5")
+@register_layout_processor("dots_ocr", version="rednote-hilab/dots.mocr")
 class DotsOcrLayout(LayoutProcessor):
-    model: str = "rednote-hilab/dots.ocr"
+    model: str = "rednote-hilab/dots.mocr"
     max_tokens: int = 12000
 
     def __init__(self) -> None:
