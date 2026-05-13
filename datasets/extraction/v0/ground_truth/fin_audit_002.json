@@ -1,0 +1,402 @@
+{
+  "title": "Staff Update on 2023 Inspection Activities",
+  "issuing_body": "PCAOB staff",
+  "section_titles": [
+    "Overview",
+    "I. 2023 Inspections Approach",
+    "II. Common Deficiencies Found by 2023 Inspections",
+    "III. Observations Related to Quality Control Systems",
+    "IV. Trends in Areas With Recurring Deficiencies, 2021 to 2023 Inspections",
+    "V. Good Practices and Important Reminders"
+  ],
+  "publication_month": "August 2024",
+  "inspection_year_covered": 2023,
+  "common_deficiency_themes": [
+    {
+      "audit_area": "Risk Assessment and the Audit of Internal Control",
+      "example_deficiency": "The engagement team did not appropriately assess the risks of material misstatement related to the valuation of the allowance for expected credit losses."
+    },
+    {
+      "audit_area": "Selecting Controls To Test",
+      "example_deficiency": "The engagement team did not identify and test controls that addressed the risk that the same individual could prepare and post journal entries in the general ledger system without approval."
+    },
+    {
+      "audit_area": "Testing Design Effectiveness",
+      "example_deficiency": "The engagement team did not sufficiently test the design effectiveness of a control because it did not evaluate the effect of incomplete information available to the control owner."
+    },
+    {
+      "audit_area": "Testing Management Review Controls",
+      "example_deficiency": "The engagement team did not evaluate the specific review procedures that the control owner performed to assess the reasonableness of assumptions used in the valuation of securities."
+    },
+    {
+      "audit_area": "Considering Information Technology (IT)",
+      "example_deficiency": "The engagement team did not identify and test controls over the accuracy and completeness of the reports used in the operation of a control as they relied on information that originated from the system."
+    },
+    {
+      "audit_area": "Rolling-forward Controls Tested at an Interim Date",
+      "example_deficiency": "The engagement team tested operating effectiveness as of an interim date and did not perform any procedures, including inquiries, during the period from the interim testing until year-end."
+    },
+    {
+      "audit_area": "Using the Work of Others",
+      "example_deficiency": "The engagement team did not evaluate whether it had a reasonable basis for using the work of internal audit as audit evidence of the operating effectiveness of selected controls."
+    },
+    {
+      "audit_area": "Using the Work of Other Auditors",
+      "example_deficiency": "The component engagement team did not fulfill the objectives of its role in an audit in which it was not the principal auditor because it did not identify and test appropriate controls related to assertions specifically identified by the principal auditor."
+    },
+    {
+      "audit_area": "Evaluating Identified Control Deficiencies",
+      "example_deficiency": "The engagement team did not sufficiently evaluate whether the deficiencies identified in controls represented a material weakness because it did not identify that the compensating controls did not address all the risks."
+    },
+    {
+      "audit_area": "Revenue and Related Accounts",
+      "example_deficiency": "The engagement team did not perform sufficient procedures to test disaggregated revenue presentation and disclosure."
+    },
+    {
+      "audit_area": "Inventory",
+      "example_deficiency": "The engagement team did not perform any procedures to test the accuracy and completeness of the period-end inventory listing reports."
+    },
+    {
+      "audit_area": "Accounts Impacted by Business Combinations",
+      "example_deficiency": "The engagement team did not perform sufficient substantive procedures to test valuation and allocation of purchase accounting, including forecast information used in valuations."
+    },
+    {
+      "audit_area": "Investment Securities",
+      "example_deficiency": "The engagement team did not perform sufficient substantive procedures to test the fair value hierarchy presentation and disclosures in the notes to the financial statements."
+    },
+    {
+      "audit_area": "Long-lived Assets, Goodwill, and Intangible Assets",
+      "example_deficiency": "The engagement team did not perform sufficient procedures with respect to using the work of a company's specialist as audit evidence."
+    },
+    {
+      "audit_area": "Digital Asset Transactions",
+      "example_deficiency": "The engagement team did not perform sufficient substantive procedures to test the occurrence of digital asset revenue transactions."
+    },
+    {
+      "audit_area": "Allowance for Credit Losses",
+      "example_deficiency": "The engagement team did not sufficiently test the reasonableness of commercial loan risk ratings because they did not select an appropriate sample expected to be representative of the total loan population."
+    },
+    {
+      "audit_area": "Cybersecurity",
+      "example_deficiency": "The engagement team did not sufficiently identify, assess, and respond to the risks of material misstatement despite obtaining evidence that a cyber-incident occurred."
+    },
+    {
+      "audit_area": "Fraud",
+      "example_deficiency": "The engagement team did not conduct a discussion among the key engagement team members about the potential for material misstatement due to fraud."
+    },
+    {
+      "audit_area": "Critical Audit Matters (CAMs)",
+      "example_deficiency": "The firm did not accurately describe how the CAM was addressed in its audit because the CAM description included procedures that were not performed or were not performed as described."
+    },
+    {
+      "audit_area": "Auditor Tenure",
+      "example_deficiency": "Deficiencies in auditor reporting of the year the firm began serving consecutively as the public company's auditor."
+    },
+    {
+      "audit_area": "Audit Committee Communications",
+      "example_deficiency": "The auditor did not communicate an understanding of the terms of the audit engagement in an engagement letter and determine that the audit committee had acknowledged and agreed to the terms."
+    },
+    {
+      "audit_area": "Form AP",
+      "example_deficiency": "Thirty-nine percent of the Form AP deficiencies involved inaccurate information including the public company's name, CIK number, and information about other firms."
+    }
+  ],
+  "cover_page_metadata_block": {
+    "spotlight_title": "SPOTLIGHT",
+    "issuing_body_name": "PCAOB",
+    "publication_month": "August 2024",
+    "subtitle_or_activity_year": "Staff Update on 2023 Inspection Activities",
+    "represents_staff_views_only": true
+  },
+  "peak_deficiency_rate_year": null,
+  "represents_board_position": false,
+  "deficiency_rate_trend_chart": [],
+  "first_time_firms_drove_trend": true,
+  "firm_classification_table_rows": [
+    {
+      "bucket_label": "U.S. GNF",
+      "inspection_cadence": "annually",
+      "firms_in_bucket_count": 6,
+      "audit_report_threshold": "more than 100 issuer audit reports each year"
+    },
+    {
+      "bucket_label": "Non-U.S. GNF",
+      "inspection_cadence": null,
+      "firms_in_bucket_count": null,
+      "audit_report_threshold": "100 or fewer issuer audit reports per year"
+    },
+    {
+      "bucket_label": "NAF Annual",
+      "inspection_cadence": "annually",
+      "firms_in_bucket_count": 8,
+      "audit_report_threshold": "more than 100 issuer audit reports per year"
+    },
+    {
+      "bucket_label": "U.S. NAF Triennial",
+      "inspection_cadence": "triennially",
+      "firms_in_bucket_count": 82,
+      "audit_report_threshold": "100 or fewer issuer audit reports per year"
+    },
+    {
+      "bucket_label": "Non-U.S. NAF",
+      "inspection_cadence": "triennially",
+      "firms_in_bucket_count": null,
+      "audit_report_threshold": "100 or fewer issuer audit reports per year"
+    }
+  ],
+  "firm_inspection_cadence_buckets": [
+    {
+      "bucket_label": "U.S. GNF",
+      "inspection_frequency": "annually",
+      "audit_report_threshold_condition": "issue more than 100 issuer audit reports each year"
+    },
+    {
+      "bucket_label": "Non-U.S. GNF",
+      "inspection_frequency": "triennially",
+      "audit_report_threshold_condition": "issue 100 or fewer issuer audit reports per year"
+    },
+    {
+      "bucket_label": "NAF Annual",
+      "inspection_frequency": "annually",
+      "audit_report_threshold_condition": "issue more than 100 issuer audit reports per year"
+    },
+    {
+      "bucket_label": "U.S. NAF Triennial",
+      "inspection_frequency": "triennially",
+      "audit_report_threshold_condition": "issue 100 or fewer issuer audit reports per year"
+    },
+    {
+      "bucket_label": "Non-U.S. NAF",
+      "inspection_frequency": "triennially",
+      "audit_report_threshold_condition": "issue 100 or fewer issuer audit reports per year"
+    },
+    {
+      "bucket_label": "Broker-Dealer Firms",
+      "inspection_frequency": "varies",
+      "audit_report_threshold_condition": "selected based on potential risks associated with protection of customer funds and securities"
+    }
+  ],
+  "table_of_contents_section_pages": [
+    {
+      "page_number": 3,
+      "section_title": "Overview"
+    },
+    {
+      "page_number": 3,
+      "section_title": "Trends"
+    },
+    {
+      "page_number": 4,
+      "section_title": "Key Findings"
+    },
+    {
+      "page_number": 10,
+      "section_title": "I. 2023 Inspections Approach"
+    },
+    {
+      "page_number": 10,
+      "section_title": "Inspection Program Enhancements We Implemented"
+    },
+    {
+      "page_number": 10,
+      "section_title": "How We Selected Firms for Inspection"
+    },
+    {
+      "page_number": 17,
+      "section_title": "How We Selected Engagements for Inspection"
+    },
+    {
+      "page_number": 12,
+      "section_title": "Inspection Profile Information"
+    },
+    {
+      "page_number": 16,
+      "section_title": "Key Inspection Considerations"
+    },
+    {
+      "page_number": 18,
+      "section_title": "II. Common Deficiencies Found by 2023 Inspections"
+    },
+    {
+      "page_number": 19,
+      "section_title": "Deficiency Examples in Auditing ICFR"
+    },
+    {
+      "page_number": 23,
+      "section_title": "Deficiency Examples in Auditing Financial Statement Areas"
+    },
+    {
+      "page_number": 27,
+      "section_title": "Deficiency Examples Related to Other PCAOB Standards or Rules"
+    },
+    {
+      "page_number": 30,
+      "section_title": "III. Observations Related to Quality Control Systems"
+    },
+    {
+      "page_number": 30,
+      "section_title": "Independence"
+    },
+    {
+      "page_number": 37,
+      "section_title": "Engagement Quality Review"
+    },
+    {
+      "page_number": 31,
+      "section_title": "Monitoring"
+    },
+    {
+      "page_number": 32,
+      "section_title": "Remediation"
+    },
+    {
+      "page_number": 32,
+      "section_title": "IV. Trends in Areas With Recurring Deficiencies, 2021 to 2023 Inspections"
+    },
+    {
+      "page_number": 32,
+      "section_title": "Trends in Deficiencies in Auditing ICFR"
+    },
+    {
+      "page_number": 34,
+      "section_title": "Trends in Deficiencies in Financial Statement Audit Areas"
+    },
+    {
+      "page_number": 36,
+      "section_title": "V. Good Practices and Important Reminders"
+    }
+  ],
+  "first_time_firms_inspected_counts": {
+    "year_2022": 19,
+    "year_2023": 28
+  },
+  "year_over_year_part_1a_rate_trend": "increasing",
+  "spotlight_represents_board_position": false,
+  "contains_independence_rules_guidance": true,
+  "first_time_firm_yoy_increase_percent": 47.37,
+  "inspection_profile_information_table": [
+    {
+      "category": "U.S. GNF",
+      "value_2022": "6",
+      "value_2023": "6"
+    },
+    {
+      "category": "Non-U.S. GNF",
+      "value_2022": "51",
+      "value_2023": "56"
+    },
+    {
+      "category": "NAF Annual",
+      "value_2022": "8",
+      "value_2023": "8"
+    },
+    {
+      "category": "U.S. NAF Triennial",
+      "value_2022": "80",
+      "value_2023": "82"
+    },
+    {
+      "category": "Non-U.S. NAF",
+      "value_2022": "12",
+      "value_2023": "15"
+    },
+    {
+      "category": "Broker-Dealer",
+      "value_2022": "50",
+      "value_2023": "60"
+    }
+  ],
+  "includes_broker_dealer_guidance_section": true,
+  "annual_inspection_audit_report_threshold": 100,
+  "example_deficiencies_tagged_by_audit_area_count": [
+    {
+      "audit_area": "Risk Assessment and the Audit of Internal Control",
+      "example_count": 3
+    },
+    {
+      "audit_area": "Selecting Controls To Test",
+      "example_count": 2
+    },
+    {
+      "audit_area": "Testing Design Effectiveness",
+      "example_count": 1
+    },
+    {
+      "audit_area": "Testing Management Review Controls",
+      "example_count": 3
+    },
+    {
+      "audit_area": "Considering Information Technology (IT)",
+      "example_count": 1
+    },
+    {
+      "audit_area": "Rolling-forward Controls Tested at an Interim Date",
+      "example_count": 1
+    },
+    {
+      "audit_area": "Using the Work of Others",
+      "example_count": 1
+    },
+    {
+      "audit_area": "Using the Work of Other Auditors",
+      "example_count": 1
+    },
+    {
+      "audit_area": "Evaluating Identified Control Deficiencies",
+      "example_count": 3
+    },
+    {
+      "audit_area": "Revenue and Related Accounts",
+      "example_count": 9
+    },
+    {
+      "audit_area": "Inventory",
+      "example_count": 6
+    },
+    {
+      "audit_area": "Accounts Impacted by Business Combinations",
+      "example_count": 2
+    },
+    {
+      "audit_area": "Investment Securities",
+      "example_count": 3
+    },
+    {
+      "audit_area": "Long-lived Assets, Goodwill, and Intangible Assets",
+      "example_count": 1
+    },
+    {
+      "audit_area": "Digital Asset Transactions",
+      "example_count": 3
+    },
+    {
+      "audit_area": "Allowance for Credit Losses",
+      "example_count": 5
+    },
+    {
+      "audit_area": "Cybersecurity",
+      "example_count": 1
+    },
+    {
+      "audit_area": "Fraud",
+      "example_count": 8
+    },
+    {
+      "audit_area": "Critical Audit Matters (CAMs)",
+      "example_count": 2
+    },
+    {
+      "audit_area": "Auditor Tenure",
+      "example_count": 1
+    },
+    {
+      "audit_area": "Audit Committee Communications",
+      "example_count": 5
+    },
+    {
+      "audit_area": "Form AP",
+      "example_count": 3
+    }
+  ],
+  "mentions_artificial_intelligence_or_machine_learning": false
+}

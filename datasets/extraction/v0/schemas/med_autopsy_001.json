@@ -1,0 +1,235 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "LA County Autopsy Report (Case 2023-14789)",
+  "description": "Los Angeles County Department of Medical Examiner autopsy report. Tailored to this specific case.",
+  "x-doc-type": "autopsy_report",
+  "x-domain": "healthcare",
+  "type": "object",
+  "properties": {
+    "jurisdiction": {
+      "type": "string",
+      "description": "Issuing medical examiner / coroner office as printed in the header.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "case_number": {
+      "type": "string",
+      "description": "Case number as printed on the report.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "decedent_name": {
+      "type": ["string", "null"],
+      "description": "Decedent's full name (last, first middle) as recorded on the report. Null if redacted.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "date_of_death": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Date the decedent was pronounced dead.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["cross_reference"]
+    },
+    "date_of_autopsy": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Date the autopsy was performed.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["cross_reference"]
+    },
+    "autopsy_performed_by": {
+      "type": ["string", "null"],
+      "description": "Pathologist who performed the autopsy.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": []
+    },
+    "heart_weight_grams": {
+      "type": ["number", "null"],
+      "description": "Recorded heart weight in grams from the internal examination.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["multi_page_aggregation"]
+    },
+    "cause_of_death": {
+      "type": "string",
+      "description": "Primary cause as stated in the Anatomic Summary / Cause of Death section.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["inference"]
+    },
+    "manner_of_death": {
+      "type": "string",
+      "enum": ["natural", "accident", "suicide", "homicide", "undetermined", "pending", "could_not_be_determined"],
+      "description": "Manner of death as classified by the examiner.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["inference"]
+    },
+    "anatomic_findings": {
+      "type": "array",
+      "description": "Every distinct numbered/lettered finding from the Anatomic Summary (I.A, I.B, II.A, ...).",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_page_aggregation", "form_region"],
+      "items": {"type": "string"}
+    },
+    "toxicology_results": {
+      "type": "array",
+      "description": "Every row of the toxicology table — one entry per (substance, specimen) pair with its analytical result.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "multi_page_aggregation"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "substance": {"type": "string"},
+          "specimen": {"type": ["string", "null"], "description": "e.g., 'Heart Blood', 'Vitreous Humor', 'Liver'."},
+          "result": {"type": ["string", "null"], "description": "Quantitative result as printed, or 'Negative' / 'Not Detected'."},
+          "units": {"type": ["string", "null"]}
+        },
+        "required": ["substance"]
+      }
+    },
+    "positive_toxicology_substances": {
+      "type": "array",
+      "description": "Set of substances with a non-zero / non-negative toxicology finding across any specimen. Derived — requires filtering the toxicology_results table.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_field_reasoning", "table_complex"],
+      "items": {"type": "string"}
+    },
+    "external_injuries_diagram_findings": {
+      "type": "array",
+      "description": "Labels annotated on the body diagram figure (page with the body silhouette). Empty array if no annotations.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["figure_diagram", "handwriting"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "body_region": {"type": "string", "description": "e.g., 'right forearm', 'left chest'."},
+          "annotation": {"type": "string", "description": "Text or description of the injury/marking."}
+        },
+        "required": ["body_region", "annotation"]
+      }
+    },
+    "has_signs_of_fatal_trauma": {
+      "type": "boolean",
+      "description": "Whether the Anatomic Summary indicates signs of fatal trauma. Computed from the summary statement.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["inference", "multi_field_reasoning"]
+    },
+    "supplementary_reports_referenced": {
+      "type": "array",
+      "description": "Separate reports referenced by the autopsy (e.g., microscopic, toxicology, microbiology).",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["multi_page_aggregation"],
+      "items": {"type": "string"}
+    },
+    "age_at_death_years": {
+      "type": ["integer", "null"],
+      "description": "Age of the decedent at death, computed from decedent DOB and date of death. Requires date arithmetic across two fields in different parts of the report.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_field_reasoning", "cross_reference"]
+    },
+    "days_from_death_to_autopsy": {
+      "type": ["integer", "null"],
+      "description": "Whole days between date_of_death and date_of_autopsy. Null if either date is missing.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_field_reasoning"]
+    },
+    "heart_weight_meets_cardiomegaly_threshold": {
+      "type": ["boolean", "null"],
+      "description": "Whether the recorded heart_weight_grams exceeds the typical male-adult cardiomegaly threshold (~400g). Requires combining extracted weight with external medical knowledge.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_field_reasoning", "inference"]
+    },
+    "negative_toxicology_count": {
+      "type": "integer",
+      "description": "Count of toxicology table rows whose result is 'Negative', 'Not Detected', or equivalent. Derived by filtering toxicology_results.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "multi_field_reasoning"]
+    },
+    "highest_ketamine_specimen": {
+      "type": ["string", "null"],
+      "description": "If ketamine is detected in any specimen, the specimen name with the highest recorded concentration. Null if ketamine not detected. Cross-row reasoning on the toxicology table.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "multi_field_reasoning"]
+    },
+    "anatomic_findings_count_involving_cardiac_system": {
+      "type": "integer",
+      "description": "Count of entries in anatomic_findings that describe cardiac findings (heart, coronary, aortic, myocardium). Requires semantic filtering of the summary.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_field_reasoning", "inference"]
+    },
+    "manner_consistent_with_accident": {
+      "type": ["boolean", "null"],
+      "description": "Whether the anatomic findings + toxicology profile are collectively consistent with manner_of_death='accident'. Compositional reasoning across the full report.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_field_reasoning", "inference"]
+    },
+    "foul_play_language_present": {
+      "type": "boolean",
+      "description": "Whether the Anatomic Summary explicitly states no foul play suspected (or similar). Tests form-region detection in the summary.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["form_region", "inference"]
+    },
+    "handwritten_annotations_on_body_diagram": {
+      "type": "boolean",
+      "description": "Whether the body silhouette figure contains handwritten annotations (not just printed labels). Requires classifying marks on the figure as hand-drawn.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["figure_diagram", "handwriting"]
+    },
+    "autopsy_report_header_form": {
+      "type": "object",
+      "description": "The boxed autopsy-report header form found at the top of most pages: case number, decedent name, DOB, sex, ethnicity, date of death, date of exam, examining pathologist. Tests dense boxed form-region KV binding.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["form_region"],
+      "properties": {
+        "case_number": {"type": "string"},
+        "decedent_name": {"type": ["string", "null"]},
+        "date_of_birth": {"type": ["string", "null"]},
+        "sex": {"type": ["string", "null"]},
+        "race_ethnicity": {"type": ["string", "null"]},
+        "date_of_death": {"type": ["string", "null"]},
+        "date_of_autopsy": {"type": ["string", "null"]},
+        "pathologist_name": {"type": ["string", "null"]}
+      },
+      "required": ["case_number"]
+    },
+    "toxicology_table_header_row": {
+      "type": "array",
+      "description": "Ordered column headers of the toxicology results table exactly as printed. Tests header-row extraction on a multi-column analytical table.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex"],
+      "items": {"type": "string"}
+    },
+    "toxicology_specimens_tested": {
+      "type": "array",
+      "description": "Unique specimen types referenced in the toxicology tables (e.g. 'Heart Blood', 'Vitreous Humor', 'Liver'). Requires set-wise aggregation across multiple test rows.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "multi_page_aggregation"],
+      "items": {"type": "string"}
+    },
+    "external_examination_checklist_items_marked": {
+      "type": "integer",
+      "description": "Count of items checked or marked present on the external examination form region (not counting unmarked checkbox items). Tests checkbox density read on a dense boxed form region.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["form_region"]
+    },
+    "supplementary_reports_header_fields": {
+      "type": "object",
+      "description": "For the toxicology supplementary report header: patient ID, account number, date collected, date received. A dense KV header on a separate report page.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["form_region"],
+      "properties": {
+        "patient_id": {"type": ["string", "null"]},
+        "account_number": {"type": ["string", "null"]},
+        "date_collected": {"type": ["string", "null"]},
+        "date_received": {"type": ["string", "null"]}
+      }
+    }
+  },
+  "required": [
+    "jurisdiction",
+    "case_number",
+    "cause_of_death",
+    "manner_of_death",
+    "anatomic_findings",
+    "toxicology_results"
+  ]
+}

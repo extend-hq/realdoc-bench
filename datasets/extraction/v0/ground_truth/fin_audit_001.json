@@ -1,0 +1,301 @@
+{
+  "regulator": "PCAOB",
+  "report_date": "February 26, 2025",
+  "firm_inspected": "Deloitte & Touche LLP",
+  "release_number": "104-2025-036",
+  "inspection_year": 2024,
+  "firm_headquarters": "New York, New York",
+  "part_1a_deficiencies": [
+    {
+      "audit_area": "Revenue",
+      "description": "The firm did not identify and test any controls over the unsatisfied performance obligations the issuer expected to be recognized as revenue within the next 12 months.",
+      "standard_cited": "AS 2201.39"
+    },
+    {
+      "audit_area": "Revenue",
+      "description": "The firm did not identify and test any controls over the accuracy and completeness of the report used in the operation of a control over unsatisfied performance obligations.",
+      "standard_cited": "AS 2201.39"
+    },
+    {
+      "audit_area": "Revenue",
+      "description": "The firm performed a substantive analytical procedure but did not determine whether the expectation was based on predictable relationships and used an unsupported threshold.",
+      "standard_cited": "AS 2305.13, AS 2305.14, AS 2301.16, AS 2301.18, AS 2301.37, AS 2305.20"
+    },
+    {
+      "audit_area": "Pension Assets",
+      "description": "The firm sent a positive confirmation request to the custodian for certain pension plan assets which was returned with exceptions but did not evaluate the nature of these exceptions.",
+      "standard_cited": "AS 2310.33"
+    },
+    {
+      "audit_area": "Allowance for Credit Losses",
+      "description": "The firm identified deviations in control operation but did not evaluate the effect on operating effectiveness and excluded certain loans from testing population.",
+      "standard_cited": "AS 2201.48, AS 2201.44"
+    },
+    {
+      "audit_area": "Allowance for Credit Losses",
+      "description": "The firm identified differences in loan risk ratings but did not evaluate the effect on audit evidence and did not perform substantive procedures for excluded loans.",
+      "standard_cited": "AS 2301.08"
+    },
+    {
+      "audit_area": "Allowance for Credit Losses",
+      "description": "The firm did not evaluate the specific review procedures that control owners performed to assess the reasonableness of qualitative factors.",
+      "standard_cited": "AS 2201.42, AS 2201.44"
+    },
+    {
+      "audit_area": "Allowance for Credit Losses",
+      "description": "The firm did not evaluate specific review procedures for risk ratings and did not test controls over accuracy and completeness of loan information used in controls.",
+      "standard_cited": "AS 2201.42, AS 2201.44, AS 2201.39"
+    },
+    {
+      "audit_area": "Revenue",
+      "description": "The firm did not identify and test any controls over the accuracy and completeness of issuer-prepared schedules used in control operation for unsatisfied performance obligations disclosure.",
+      "standard_cited": "AS 2201.39"
+    },
+    {
+      "audit_area": "Revenue",
+      "description": "The firm used issuer-prepared schedules in substantive testing but did not test or test controls over the accuracy and completeness of these schedules.",
+      "standard_cited": "AS 1105.10"
+    },
+    {
+      "audit_area": "Revenue",
+      "description": "The firm did not identify and evaluate a misstatement in a required disclosure under FASB ASC Topic 606.",
+      "standard_cited": "AS 2810.30, AS 2810.31"
+    },
+    {
+      "audit_area": "Inventory",
+      "description": "The firm did not identify and test any controls that addressed whether inventory was counted with sufficient frequency in accordance with the issuer's cycle-count policy.",
+      "standard_cited": "AS 2201.39"
+    },
+    {
+      "audit_area": "Inventory",
+      "description": "The firm did not obtain sufficient appropriate audit evidence that cycle-count procedures were sufficiently reliable to produce results substantially the same as a count of all items each year.",
+      "standard_cited": "AS 2510.11"
+    },
+    {
+      "audit_area": "Leases",
+      "description": "The firm did not perform procedures to test the accuracy and completeness of issuer-produced data used by specialists and did not evaluate relevance and reliability of external information.",
+      "standard_cited": "AS 1105.A8a"
+    },
+    {
+      "audit_area": "Leases",
+      "description": "The firm did not evaluate the reasonableness of significant assumptions used by the company's specialists.",
+      "standard_cited": "AS 1105.A8b"
+    },
+    {
+      "audit_area": "Long-lived Assets",
+      "description": "The firm did not evaluate the specific review procedures that the control owner performed to assess the appropriateness of excluding certain costs.",
+      "standard_cited": "AS 2201.42, AS 2201.44"
+    },
+    {
+      "audit_area": "Long-lived Assets",
+      "description": "The firm used operating results in substantive procedures but did not evaluate whether excluded costs were directly associated with the identified asset groups.",
+      "standard_cited": "AS 2301.08"
+    },
+    {
+      "audit_area": "Long-lived Assets",
+      "description": "The firm did not evaluate whether the issuer's method to determine recoverability using cash-flow forecasts that excluded costs was in conformity with FASB ASC Topic 360.",
+      "standard_cited": "AS 2501.10"
+    },
+    {
+      "audit_area": "Investment Securities",
+      "description": "The firm did not evaluate the specific review procedures that the control owner performed to determine comparative prices and identify items for follow-up.",
+      "standard_cited": "AS 2201.42, AS 2201.44"
+    },
+    {
+      "audit_area": "Certain Assets",
+      "description": "The firm did not perform sufficient procedures to evaluate the issuer's presentation of certain assets as current assets beyond inquiring of management.",
+      "standard_cited": "AS 2301.08"
+    },
+    {
+      "audit_area": "Fraud Risk",
+      "description": "The firm did not extend audit procedures to certain journal entries it identified as having certain fraud risk characteristics.",
+      "standard_cited": "AS 2401"
+    },
+    {
+      "audit_area": "Auditor's Report",
+      "description": "The year the firm began serving consecutively as the company's auditor included in the audit report was incorrect.",
+      "standard_cited": "AS 3101"
+    },
+    {
+      "audit_area": "Critical Audit Matter",
+      "description": "The firm's communication of a critical audit matter did not accurately refer to the relevant financial statement accounts or disclosures.",
+      "standard_cited": "AS 3101"
+    },
+    {
+      "audit_area": "Tax Services Pre-Approval",
+      "description": "For certain permissible tax services, the firm did not describe in writing the scope and/or fee structure when seeking pre-approval from the audit committee.",
+      "standard_cited": "PCAOB Rule 3524"
+    },
+    {
+      "audit_area": "Independence Communication",
+      "description": "The firm did not describe in writing to the audit committee all relationships that may have been thought to bear on independence prior to accepting the audit.",
+      "standard_cited": "PCAOB Rule 3526"
+    }
+  ],
+  "audits_reviewed_count": 63,
+  "as2401_deficiency_count": 1,
+  "is_public_version_redacted": true,
+  "part_1a_deficiencies_count": 9,
+  "highest_frequency_audit_area": "Revenue and related accounts",
+  "cover_page_issuer_header_fields": {
+    "firm_name": "Deloitte & Touche LLP",
+    "firm_hq_city": "New York",
+    "firm_hq_state": "New York",
+    "report_type_label": "2024 Inspection",
+    "pcaob_release_number": "104-2025-036"
+  },
+  "highest_deficiency_revenue_band": "$100 - $500 million",
+  "part_1a_deficiency_rate_percent": 14,
+  "prior_year_comparison_mentioned": false,
+  "quality_control_criticisms_count": null,
+  "audit_areas_frequency_table_all_rows": [
+    {
+      "audit_area": "Revenue and related accounts",
+      "audits_selected_count": 43,
+      "part_1a_deficiency_count": 2
+    },
+    {
+      "audit_area": "Inventory",
+      "audits_selected_count": 12,
+      "part_1a_deficiency_count": 1
+    },
+    {
+      "audit_area": "Long-lived assets",
+      "audits_selected_count": 12,
+      "part_1a_deficiency_count": 1
+    },
+    {
+      "audit_area": "Business combinations",
+      "audits_selected_count": 11,
+      "part_1a_deficiency_count": 0
+    },
+    {
+      "audit_area": "Goodwill and intangible assets",
+      "audits_selected_count": 9,
+      "part_1a_deficiency_count": 0
+    }
+  ],
+  "audit_areas_most_frequently_reviewed": [
+    {
+      "audit_area": "Revenue and related accounts",
+      "part_1a_deficiencies_count": 2
+    },
+    {
+      "audit_area": "Inventory",
+      "part_1a_deficiencies_count": 1
+    },
+    {
+      "audit_area": "Long-lived assets",
+      "part_1a_deficiencies_count": 1
+    },
+    {
+      "audit_area": "Business combinations",
+      "part_1a_deficiencies_count": 0
+    },
+    {
+      "audit_area": "Goodwill and intangible assets",
+      "part_1a_deficiencies_count": 0
+    }
+  ],
+  "has_cybersecurity_related_deficiency": false,
+  "deficiencies_referencing_going_concern": 0,
+  "inspection_results_by_revenue_range_table": [
+    {
+      "revenue_band": "Less than $100 million",
+      "audits_reviewed": 8,
+      "deficiency_rate_percent": 0,
+      "audits_with_deficiencies": 0
+    },
+    {
+      "revenue_band": "$100 - $500 million",
+      "audits_reviewed": 6,
+      "deficiency_rate_percent": 33.33,
+      "audits_with_deficiencies": 2
+    },
+    {
+      "revenue_band": "Greater than $500 million - $1 billion",
+      "audits_reviewed": 13,
+      "deficiency_rate_percent": 15.38,
+      "audits_with_deficiencies": 2
+    },
+    {
+      "revenue_band": "Greater than $1 - $2.5 billion",
+      "audits_reviewed": 8,
+      "deficiency_rate_percent": 25,
+      "audits_with_deficiencies": 2
+    },
+    {
+      "revenue_band": "Greater than $2.5 - $5 billion",
+      "audits_reviewed": 13,
+      "deficiency_rate_percent": 15.38,
+      "audits_with_deficiencies": 2
+    },
+    {
+      "revenue_band": "Greater than $5 - $10 billion",
+      "audits_reviewed": 5,
+      "deficiency_rate_percent": 20,
+      "audits_with_deficiencies": 1
+    },
+    {
+      "revenue_band": "Greater than $10 - $50 billion",
+      "audits_reviewed": 7,
+      "deficiency_rate_percent": 14.29,
+      "audits_with_deficiencies": 1
+    },
+    {
+      "revenue_band": "Greater than $50 billion",
+      "audits_reviewed": 5,
+      "deficiency_rate_percent": 20,
+      "audits_with_deficiencies": 1
+    }
+  ],
+  "inspection_results_by_issuer_revenue_range": [
+    {
+      "revenue_band": "Less than $100 million",
+      "audits_reviewed_count": 8,
+      "deficiency_rate_percent": 0
+    },
+    {
+      "revenue_band": "$100 - $500 million",
+      "audits_reviewed_count": 6,
+      "deficiency_rate_percent": 33.33
+    },
+    {
+      "revenue_band": "Greater than $500 million - $1 billion",
+      "audits_reviewed_count": 13,
+      "deficiency_rate_percent": 15.38
+    },
+    {
+      "revenue_band": "Greater than $1 - $2.5 billion",
+      "audits_reviewed_count": 8,
+      "deficiency_rate_percent": 25
+    },
+    {
+      "revenue_band": "Greater than $2.5 - $5 billion",
+      "audits_reviewed_count": 13,
+      "deficiency_rate_percent": 15.38
+    },
+    {
+      "revenue_band": "Greater than $5 - $10 billion",
+      "audits_reviewed_count": 5,
+      "deficiency_rate_percent": 20
+    },
+    {
+      "revenue_band": "Greater than $10 - $50 billion",
+      "audits_reviewed_count": 7,
+      "deficiency_rate_percent": 14.29
+    },
+    {
+      "revenue_band": "Greater than $50 billion",
+      "audits_reviewed_count": 5,
+      "deficiency_rate_percent": 20
+    }
+  ],
+  "consecutive_auditor_years_cited_in_narrative": null,
+  "revenue_recognition_deficiencies_tested_controls": false,
+  "deficiency_narrative_header_fields_for_first_engagement": {
+    "issuer_category": "Industrials",
+    "audit_area_of_focus": "Revenue and Pension Assets",
+    "count_of_deficiencies_described": 4
+  }
+}

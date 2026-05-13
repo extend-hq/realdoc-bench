@@ -1,0 +1,236 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PCAOB Spotlight — 2023 Inspection Activities Staff Update",
+  "description": "PCAOB staff spotlight (August 2024) summarizing 2023 inspections across firms. Tailored to this specific report.",
+  "x-doc-type": "audit_inspection_report",
+  "x-domain": "financial_services",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Document title as printed on the cover.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "publication_month": {
+      "type": "string",
+      "description": "Publication month printed on the cover (e.g. 'August 2024').",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "issuing_body": {
+      "type": "string",
+      "description": "Issuer — 'PCAOB staff' or similar.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "inspection_year_covered": {
+      "type": "integer",
+      "description": "Calendar year whose inspection activities are summarized.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "represents_board_position": {
+      "type": "boolean",
+      "description": "True if the cover states the document represents the views of the Board (vs. staff).",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["inference"]
+    },
+    "section_titles": {
+      "type": "array",
+      "description": "Top-level section titles from the Table of Contents, in order.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["table_simple"],
+      "items": {"type": "string"}
+    },
+    "first_time_firms_inspected_counts": {
+      "type": "object",
+      "description": "Number of firms inspected for the first time, by year, as stated in the Trends section.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["cross_reference"],
+      "properties": {
+        "year_2022": {"type": ["integer", "null"]},
+        "year_2023": {"type": ["integer", "null"]}
+      }
+    },
+    "firm_inspection_cadence_buckets": {
+      "type": "array",
+      "description": "Every inspection-cadence bucket described in the firm classification section (annual vs triennial, affiliated vs non-affiliated, and the audit-report threshold governing each).",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_page_aggregation"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "bucket_label": {"type": "string", "description": "e.g. 'NAF Annual', 'NAF Triennial'."},
+          "inspection_frequency": {"type": "string", "description": "e.g. 'annually', 'triennially'."},
+          "audit_report_threshold_condition": {"type": ["string", "null"], "description": "e.g. 'issues more than 100 issuer audit reports per year'."}
+        },
+        "required": ["bucket_label", "inspection_frequency"]
+      }
+    },
+    "deficiency_rate_trend_chart": {
+      "type": "array",
+      "description": "Datapoints read off the deficiency-rate trend chart in the Key Findings / Trends section. If no chart present, empty array.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["chart_read"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "year": {"type": "integer"},
+          "part_1a_deficiency_rate_percent": {"type": "number"}
+        },
+        "required": ["year", "part_1a_deficiency_rate_percent"]
+      }
+    },
+    "common_deficiency_themes": {
+      "type": "array",
+      "description": "Themes enumerated in 'Common Deficiencies Found by 2023 Inspections' (Section II). One entry per audit-area heading.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_page_aggregation"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "audit_area": {"type": "string"},
+          "example_deficiency": {"type": ["string", "null"], "description": "A one-sentence summary of a representative deficiency quoted in the section."}
+        },
+        "required": ["audit_area"]
+      }
+    },
+    "contains_independence_rules_guidance": {
+      "type": "boolean",
+      "description": "True if the report includes content on SEC / PCAOB auditor-independence rules.",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["multi_page_aggregation"]
+    },
+    "first_time_firms_drove_trend": {
+      "type": "boolean",
+      "description": "Whether the report attributes the year-over-year deficiency rate change primarily to first-time-inspected firms. Derived from Trends narrative.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["inference", "multi_field_reasoning"]
+    },
+    "first_time_firm_yoy_increase_percent": {
+      "type": "number",
+      "description": "Percent increase in first-time-inspected firms from 2022 to 2023, computed from the Trends figures. e.g. (28 - 19) / 19 * 100.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_field_reasoning"]
+    },
+    "annual_inspection_audit_report_threshold": {
+      "type": ["integer", "null"],
+      "description": "The minimum number of issuer audit reports per year that triggers annual (vs. triennial) inspection cadence. Requires reading the cadence classification section.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["cross_reference"]
+    },
+    "peak_deficiency_rate_year": {
+      "type": "integer",
+      "description": "Year in the deficiency-rate trend chart (Key Findings section) with the highest Part I.A rate. Requires chart reading.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["chart_read"]
+    },
+    "spotlight_represents_board_position": {
+      "type": "boolean",
+      "description": "Whether the cover-page disclaimer positions this document as representing the Board's views or staff views. Tests inference over the boilerplate disclaimer language.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["inference"]
+    },
+    "example_deficiencies_tagged_by_audit_area_count": {
+      "type": "array",
+      "description": "For each audit_area discussed in Section II's 'Common Deficiencies', the count of illustrative example deficiencies quoted under that area.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_page_aggregation", "table_complex"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "audit_area": {"type": "string"},
+          "example_count": {"type": "integer"}
+        },
+        "required": ["audit_area", "example_count"]
+      }
+    },
+    "mentions_artificial_intelligence_or_machine_learning": {
+      "type": "boolean",
+      "description": "Does the report discuss AI, machine learning, or use of such tools in audit procedures? ADVERSARIAL: a 2023 inspection spotlight likely does not mention these terms.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_page_aggregation", "inference"]
+    },
+    "year_over_year_part_1a_rate_trend": {
+      "type": ["string", "null"],
+      "enum": ["increasing", "decreasing", "flat", "mixed", null],
+      "description": "Directional trend of the Part I.A deficiency rate over the years covered in the chart. Inference from chart trajectory.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["chart_read", "multi_field_reasoning"]
+    },
+    "includes_broker_dealer_guidance_section": {
+      "type": "boolean",
+      "description": "Whether the independence-rules section calls out broker-dealers specifically (distinct from public companies). Tests classification of section sub-scope.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["cross_reference", "inference"]
+    },
+    "firm_classification_table_rows": {
+      "type": "array",
+      "description": "Each firm-classification bucket row from Section I describing how firms are selected and inspected. Bucket label, inspection cadence, audit-report threshold, firm-count. Tests multi-column table with narrative descriptors as cell values.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "bucket_label": {"type": "string"},
+          "inspection_cadence": {"type": ["string", "null"]},
+          "audit_report_threshold": {"type": ["string", "null"]},
+          "firms_in_bucket_count": {"type": ["integer", "null"]}
+        },
+        "required": ["bucket_label"]
+      }
+    },
+    "inspection_profile_information_table": {
+      "type": "array",
+      "description": "The 'Inspection Profile Information' section usually contains a dense table of firm counts by category and year. Each row: category, 2022 count, 2023 count, change. Tests multi-year column binding.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "category": {"type": "string"},
+          "value_2022": {"type": ["string", "null"]},
+          "value_2023": {"type": ["string", "null"]}
+        },
+        "required": ["category"]
+      }
+    },
+    "cover_page_metadata_block": {
+      "type": "object",
+      "description": "The cover-page 'Spotlight' metadata block: title, subtitle/year, publication month, issuing body name, disclaimer language.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["form_region"],
+      "properties": {
+        "spotlight_title": {"type": "string"},
+        "subtitle_or_activity_year": {"type": ["string", "null"]},
+        "publication_month": {"type": "string"},
+        "issuing_body_name": {"type": "string"},
+        "represents_staff_views_only": {"type": ["boolean", "null"]}
+      },
+      "required": ["spotlight_title", "publication_month"]
+    },
+    "table_of_contents_section_pages": {
+      "type": "array",
+      "description": "Rows of the Table of Contents: each top-level section title plus its page number. Tests row-level binding across a dense TOC that mixes section titles with page numbers.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "form_region"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "section_title": {"type": "string"},
+          "page_number": {"type": ["integer", "null"]}
+        },
+        "required": ["section_title"]
+      }
+    }
+  },
+  "required": [
+    "title",
+    "publication_month",
+    "issuing_body",
+    "inspection_year_covered",
+    "section_titles",
+    "common_deficiency_themes"
+  ]
+}

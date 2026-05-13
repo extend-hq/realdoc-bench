@@ -1,0 +1,332 @@
+{
+  "case_number": "2023-14789",
+  "jurisdiction": "County of Los Angeles Department of Medical Examiner",
+  "date_of_death": "10/28/2023",
+  "decedent_name": "Perry, Matthew Langford",
+  "cause_of_death": "Acute effects of ketamine",
+  "date_of_autopsy": "10/29/2023",
+  "manner_of_death": "accident",
+  "anatomic_findings": [
+    "I. 54-year-old male with history of chronic obstructive pulmonary disease/emphysema, diabetes; drug use in past-reportedly clean for 19 months; heavy tobacco user for many years but currently not smoking; on ketamine infusion therapy with most recent therapy reportedly one and a half weeks before death",
+    "I.A. Found unresponsive floating face down in heated end of pool",
+    "I.B. Prescription medications and loose pills present at residence, however none reported near pool and no medications, drugs or drug paraphernalia adjacent to the pool",
+    "I.C. No signs of fatal trauma and no foul play suspected",
+    "II. Autopsy findings",
+    "II.A. Focal, moderately severe left anterior descending coronary artery atherosclerosis with proximal to mid portions ranging from 50% to 75% narrowing; no thrombi are noted and there are no acute myocardial infarctions grossly identified -Mild cardiomegaly, 465-gram heart with early left ventricular dilation",
+    "II.E. Lungs with marked anthracosis and bullous changes, as well as pulmonary edema and congestion",
+    "II.F. Nephrosclerosis of kidneys",
+    "II.G. Pancreatic fibrosis, chronic",
+    "II.H. Remote abdominal surgery with chronic fibrous adhesions of intestines; mostly fluid contents in stomach",
+    "II.I. Moderately severe aortic atherosclerosis",
+    "II.J. Chronic hepatic congestion, liver; mild splenomegaly",
+    "II.K. See separate microscopic, toxicology, microbiology reports"
+  ],
+  "age_at_death_years": 54,
+  "heart_weight_grams": 465,
+  "toxicology_results": [
+    {
+      "units": null,
+      "result": "Negative",
+      "specimen": "Blood, Heart",
+      "substance": "Ethanol"
+    },
+    {
+      "units": null,
+      "result": "PP",
+      "specimen": "Blood, Heart",
+      "substance": "Benzodiazepines"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Cocaine and Metabolites"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Fentanyl"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Methamphetamine & MDMA"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Opiates: Codeine & Morphine"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Opiates: Hydrocodone & Hydromorphone"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Phencyclidine"
+    },
+    {
+      "units": "ng/mL",
+      "result": "3540",
+      "specimen": "Blood, Femoral",
+      "substance": "Ketamine"
+    },
+    {
+      "units": null,
+      "result": "Present",
+      "specimen": "Blood, Femoral",
+      "substance": "Norketamine"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Bupropion"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Bupropion Metabolites"
+    },
+    {
+      "units": null,
+      "result": "Present",
+      "specimen": "Blood, Heart",
+      "substance": "Ketamine"
+    },
+    {
+      "units": null,
+      "result": "Present",
+      "specimen": "Blood, Heart",
+      "substance": "Norketamine"
+    },
+    {
+      "units": null,
+      "result": "Inc.",
+      "specimen": "Blood, Heart",
+      "substance": "Quetiapine"
+    },
+    {
+      "units": null,
+      "result": "Present",
+      "specimen": "Blood, Heart",
+      "substance": "Quetiapine Metabolite"
+    },
+    {
+      "units": "ng/mL",
+      "result": "3271",
+      "specimen": "Blood, Heart",
+      "substance": "Ketamine"
+    },
+    {
+      "units": null,
+      "result": "Present",
+      "specimen": "Blood, Heart",
+      "substance": "Norketamine"
+    },
+    {
+      "units": "ng/mL",
+      "result": "48",
+      "specimen": "Blood, Heart",
+      "substance": "7-Aminoclonazepam"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Clonazepam"
+    },
+    {
+      "units": "ng/mL",
+      "result": "8.4",
+      "specimen": "Blood, Heart",
+      "substance": "Lorazepam"
+    },
+    {
+      "units": null,
+      "result": "Done",
+      "specimen": "Blood, Heart",
+      "substance": "Buprenorphine"
+    },
+    {
+      "units": null,
+      "result": "Done",
+      "specimen": "Blood, Heart",
+      "substance": "Lamotrigine"
+    },
+    {
+      "units": null,
+      "result": "Done",
+      "specimen": "Blood, Heart",
+      "substance": "Vilazodone"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Acetone"
+    },
+    {
+      "units": null,
+      "result": "ND",
+      "specimen": "Blood, Heart",
+      "substance": "Isopropanol"
+    },
+    {
+      "units": "mg",
+      "result": "1.1",
+      "specimen": "Stomach Contents",
+      "substance": "Ketamine"
+    },
+    {
+      "units": null,
+      "result": "Present",
+      "specimen": "Stomach Contents",
+      "substance": "Norketamine"
+    },
+    {
+      "units": null,
+      "result": "Done",
+      "specimen": "Vitreous",
+      "substance": "Electrolytes and Glucose"
+    },
+    {
+      "units": "ng/mL",
+      "result": "8.0",
+      "specimen": "Heart Blood",
+      "substance": "Buprenorphine - Free"
+    },
+    {
+      "units": "ng/mL",
+      "result": "17",
+      "specimen": "Heart Blood",
+      "substance": "Norbuprenorphine - Free"
+    }
+  ],
+  "autopsy_performed_by": "Raffi Djabourian, M.D.",
+  "has_signs_of_fatal_trauma": false,
+  "highest_ketamine_specimen": "Blood, Femoral",
+  "negative_toxicology_count": 11,
+  "autopsy_report_header_form": {
+    "sex": "Male",
+    "case_number": "2023-14789",
+    "date_of_birth": "08/19/1969",
+    "date_of_death": "10/28/2023",
+    "decedent_name": "Perry, Matthew Langford",
+    "race_ethnicity": "White/Caucasian",
+    "date_of_autopsy": "10/29/2023",
+    "pathologist_name": "Raffi Djabourian, M.D."
+  },
+  "days_from_death_to_autopsy": 1,
+  "foul_play_language_present": true,
+  "toxicology_specimens_tested": [
+    "Blood, Heart",
+    "Blood, Femoral",
+    "Stomach Contents",
+    "Vitreous",
+    "Heart Blood"
+  ],
+  "toxicology_table_header_row": [
+    "SPECIMEN",
+    "SERVICE",
+    "DRUG",
+    "RESULT",
+    "ANALYST"
+  ],
+  "positive_toxicology_substances": [
+    "Ketamine",
+    "Norketamine",
+    "Benzodiazepines",
+    "Quetiapine Metabolite",
+    "7-Aminoclonazepam",
+    "Lorazepam",
+    "Buprenorphine",
+    "Norbuprenorphine"
+  ],
+  "manner_consistent_with_accident": true,
+  "supplementary_reports_referenced": [
+    "microscopic",
+    "toxicology",
+    "microbiology"
+  ],
+  "external_injuries_diagram_findings": [
+    {
+      "annotation": "4 gray-born, nilystrt, &bald",
+      "body_region": "Head/scalp"
+    },
+    {
+      "annotation": "blue, epetch, eintrag, postmortem ant activity abrasions",
+      "body_region": "Face"
+    },
+    {
+      "annotation": "No lesions",
+      "body_region": "Chest/torso"
+    },
+    {
+      "annotation": "2-5 scars incl. old surgical, 3-3.5x1 mars R lat, vertical surg",
+      "body_region": "Abdomen"
+    },
+    {
+      "annotation": "No short linear scars, faded burn-born ecchy",
+      "body_region": "Arms/forearms"
+    },
+    {
+      "annotation": "Distal tip remote amp",
+      "body_region": "Right hand"
+    },
+    {
+      "annotation": "Tardieu spots",
+      "body_region": "Legs/thighs"
+    },
+    {
+      "annotation": "Mod livor, no lesions",
+      "body_region": "Back"
+    },
+    {
+      "annotation": "4x1 jurp, faded green-blue contusions",
+      "body_region": "Lower extremities"
+    },
+    {
+      "annotation": "middle nail cadmyrosin",
+      "body_region": "Right index finger"
+    },
+    {
+      "annotation": "postmortem yellow-brown ant activity abrasions",
+      "body_region": "Hips/buttocks"
+    },
+    {
+      "annotation": "faded green brown contusions 2x1.5",
+      "body_region": "Thighs"
+    },
+    {
+      "annotation": "faded blue-gray contusions, ant yellow abrasions",
+      "body_region": "Lower legs"
+    },
+    {
+      "annotation": "postmortem red-brown ant activity abrasions, 3\" scar irregular",
+      "body_region": "Face"
+    },
+    {
+      "annotation": "No nasal, mandibular maxillary fractures, No blood, No foam",
+      "body_region": "Nose/mouth"
+    }
+  ],
+  "supplementary_reports_header_fields": {
+    "patient_id": "LACCO-202314789",
+    "date_received": "10/30/2023",
+    "account_number": "LACCO202314789",
+    "date_collected": "10/29/2023"
+  },
+  "handwritten_annotations_on_body_diagram": true,
+  "heart_weight_meets_cardiomegaly_threshold": true,
+  "external_examination_checklist_items_marked": 45,
+  "anatomic_findings_count_involving_cardiac_system": 3
+}

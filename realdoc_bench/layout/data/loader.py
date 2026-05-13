@@ -1,0 +1,90 @@
+"""realdoc-layout dataset loader.
+
+Resolves the manifest CSV from the repo, the image + COCO blobs from the HF
+dataset (``extend-ai/realdoc-layout``), and yields validated samples joining
+the two. HF is private by default; ``HF_TOKEN`` (or ``huggingface-cli login``)
+is required.
+"""
+
+from __future__ import annotations
+
+import csv
+import json
+from collections.abc import Iterable, Iterator
+from dataclasses import dataclass
+from pathlib import Path
+
+from realdoc_bench.layout.normalizers.base import LayoutDocument
+from realdoc_bench.layout.normalizers.coco import normalize_coco
+from realdoc_bench.shared.io.hf import fetch_dataset
+
+DEFAULT_HF_DATASET = "extend-ai/realdoc-layout"
+DEFAULT_MANIFEST = Path(__file__).resolve().parents[3] / "datasets" / "layout" / "manifest.csv"
+
+
+@dataclass(frozen=True)
+class LayoutSample:
+    page_id: str
+    split: str
+    domain: str
+    image_path: Path
+    ground_truth: LayoutDocument
+    source_url: str | None
+    original_image_url: str | None
+
+
+def _read_manifest(manifest_path: Path) -> list[dict[str, str]]:
+    with manifest_path.open() as f:
+        return list(csv.DictReader(f))
+
+
+def _load_blobs(snapshot_dir: Path, page_id: str) -> tuple[Path, dict]:
+    """Locate the image + COCO annotation for ``page_id`` inside the HF snapshot."""
+    image_path = next(
+        (p for p in (snapshot_dir / "images").glob(f"{page_id}.*") if p.suffix.lower() in {".png", ".jpg", ".jpeg"}),
+        None,
+    )
+    if image_path is None:
+        raise FileNotFoundError(f"no image for {page_id} under {snapshot_dir}/images")
+    ann_path = snapshot_dir / "annotations" / f"{page_id}.json"
+    if not ann_path.exists():
+        raise FileNotFoundError(f"no annotations for {page_id} at {ann_path}")
+    with ann_path.open() as f:
+        coco = json.load(f)
+    return image_path, coco
+
+
+def load(
+    *,
+    manifest_path: Path = DEFAULT_MANIFEST,
+    hf_dataset: str = DEFAULT_HF_DATASET,
+    hf_revision: str | None = None,
+    splits: Iterable[str] | None = None,
+    domains: Iterable[str] | None = None,
+    limit: int | None = None,
+) -> Iterator[LayoutSample]:
+    """Yield :class:`LayoutSample` records for the (optionally filtered) manifest."""
+    snapshot = fetch_dataset(hf_dataset, revision=hf_revision)
+    rows = _read_manifest(manifest_path)
+    if splits is not None:
+        keep_splits = set(splits)
+        rows = [r for r in rows if r["split"] in keep_splits]
+    if domains is not None:
+        keep_domains = set(domains)
+        rows = [r for r in rows if r["domain"] in keep_domains]
+    if limit is not None:
+        rows = rows[:limit]
+
+    for row in rows:
+        page_id = row["pageId"]
+        image_path, coco = _load_blobs(snapshot, page_id)
+        gt = normalize_coco(coco, source=image_path.name)
+        yield LayoutSample(
+            page_id=page_id,
+            split=row["split"],
+            domain=row["domain"],
+            image_path=image_path,
+            ground_truth=gt,
+            source_url=row.get("sourceUrl") or None,
+            original_image_url=row.get("originalImageUrl") or None,
+        )

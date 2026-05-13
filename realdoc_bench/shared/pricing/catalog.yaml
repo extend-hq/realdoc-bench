@@ -1,0 +1,49 @@
+# Per-provider cost catalog. Used by realdoc_bench.shared.pricing.meter.cost().
+#
+# Two unit kinds:
+#   - "page":   {usd: <$/page>}                       (most layout + parser providers)
+#   - "tokens": {input_usd_per_1k, output_usd_per_1k} (LLM agents)
+#
+# Rates are public list prices as of 2026-05-13 and may be stale. The catalog
+# SHA is stamped into every run.yaml so old runs remain interpretable but should
+# not be cost-compared across catalog versions without re-metering.
+
+# ── Layout / parser providers (per page) ────────────────────────────────────
+extend_v1_0_1:                  {unit: page,   usd: 0.010}
+extend_v2_0_0_beta:             {unit: page,   usd: 0.012}
+extend_v2_agentic:              {unit: page,   usd: 0.020}
+extend_performance_v2_beta:     {unit: page,   usd: 0.012}
+extend_performance_agentic:     {unit: page,   usd: 0.020}
+extend_light_v0_0_2_beta:       {unit: page,   usd: 0.003}
+extend_light_v1_0_0:            {unit: page,   usd: 0.004}
+
+extend_performance_v1_0_0:      {unit: page,   usd: 0.010}
+extend_performance_v2_0_0_beta: {unit: page,   usd: 0.012}
+
+azure_di:                       {unit: page,   usd: 0.010}
+aws_textract:                   {unit: page,   usd: 0.015}
+reducto:                        {unit: page,   usd: 0.010}
+llamaparse:                     {unit: page,   usd: 0.030}
+mistral_ocr:                    {unit: page,   usd: 0.005}
+datalabs_chandra:               {unit: page,   usd: 0.008}
+
+# Local / open-source providers are free at inference; cost is left null.
+pymupdf:                        {unit: page,   usd: 0.0}
+gt_self:                        {unit: page,   usd: 0.0}
+paddle_structure:               {unit: page,   usd: 0.0}
+dots_ocr:                       {unit: page,   usd: 0.0}
+chandra_ocr:                    {unit: page,   usd: 0.0}
+glm_ocr:                        {unit: page,   usd: 0.0}
+elrnd_lunar_darkness:           {unit: page,   usd: 0.0}
+elrnd_eternal_fog:              {unit: page,   usd: 0.0}
+
+# VLMs invoked as layout processors: bill at token rates of their underlying model.
+# Per-page conversion done by the caller via image+prompt token usage.
+gemini_3_flash:                 {unit: tokens, input_usd_per_1k: 0.0006, output_usd_per_1k: 0.0024}
+gemini_flash_lite:              {unit: tokens, input_usd_per_1k: 0.0003, output_usd_per_1k: 0.0012}
+gemini_pro:                     {unit: tokens, input_usd_per_1k: 0.0050, output_usd_per_1k: 0.0200}
+
+# ── Extraction agents (token billing) ───────────────────────────────────────
+claude_sonnet_4_6:              {unit: tokens, input_usd_per_1k: 0.003,  output_usd_per_1k: 0.015}
+claude_opus_4_6:                {unit: tokens, input_usd_per_1k: 0.015,  output_usd_per_1k: 0.075}
+gpt_5_4:                        {unit: tokens, input_usd_per_1k: 0.0025, output_usd_per_1k: 0.0100}

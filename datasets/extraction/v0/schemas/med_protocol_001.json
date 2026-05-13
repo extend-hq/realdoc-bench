@@ -1,0 +1,238 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Pfizer BNT162 COVID-19 Vaccine — Protocol C4591001 (Amendment 20)",
+  "description": "Pfizer/BioNTech phase 1/2/3 protocol PF-07302048. Tailored to this specific protocol document.",
+  "x-doc-type": "clinical_trial_protocol",
+  "x-domain": "healthcare",
+  "type": "object",
+  "properties": {
+    "study_title": {
+      "type": "string",
+      "description": "Full study title as printed on the cover.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "protocol_id": {
+      "type": "string",
+      "description": "Sponsor protocol ID (e.g. 'C4591001').",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "investigational_product_code": {
+      "type": "string",
+      "description": "Product code of the investigational product (e.g. 'PF-07302048').",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "protocol_amendment_number": {
+      "type": "integer",
+      "description": "Current amendment number as printed on the cover.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "protocol_amendment_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the current amendment.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "sponsor": {
+      "type": "string",
+      "description": "Study sponsor named on the cover.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "phase": {
+      "type": "string",
+      "enum": ["1", "1/2", "2", "2/3", "1/2/3", "3", "4"],
+      "description": "Phase designation from the cover-page design description.",
+      "x-difficulty": "easy",
+      "x-capabilities": []
+    },
+    "study_design_descriptors": {
+      "type": "array",
+      "description": "Design adjectives from the cover title (e.g. 'placebo-controlled', 'randomized', 'observer-blind', 'dose-finding').",
+      "x-difficulty": "intermediate",
+      "x-capabilities": ["inference"],
+      "items": {"type": "string"}
+    },
+    "amendment_history": {
+      "type": "array",
+      "description": "Every prior amendment row from the Document History table (version, date, rationale summary).",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "multi_page_aggregation"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "version": {"type": "string"},
+          "date": {"type": ["string", "null"], "format": "date"},
+          "rationale_summary": {"type": ["string", "null"]}
+        },
+        "required": ["version"]
+      }
+    },
+    "schedule_of_activities_visits": {
+      "type": "array",
+      "description": "Visit column headers from the Schedule of Activities (SoA) tables — one entry per visit label (e.g. 'Visit 1', 'Visit 404').",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex"],
+      "items": {"type": "string"}
+    },
+    "primary_endpoints": {
+      "type": "array",
+      "description": "Every primary endpoint listed in the protocol objectives section.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_page_aggregation"],
+      "items": {"type": "string"}
+    },
+    "phase1_booster_dose": {
+      "type": ["object", "null"],
+      "description": "Details of the Phase 1 booster dose described in Amendment 13 / boostability rationale.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["cross_reference"],
+      "properties": {
+        "product": {"type": "string"},
+        "dose_ug": {"type": "number"},
+        "months_after_primary_series": {"type": "array", "items": {"type": "integer"}, "description": "e.g. [6, 12]."}
+      }
+    },
+    "study_design_figure_arms_count": {
+      "type": "integer",
+      "description": "Number of treatment arms shown in the study design flow figure.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["figure_diagram"]
+    },
+    "analysis_populations": {
+      "type": "array",
+      "description": "Every analysis population defined in the statistical considerations / analysis populations section.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_page_aggregation"],
+      "items": {"type": "string"}
+    },
+    "early_completion_language_added": {
+      "type": "boolean",
+      "description": "Whether the current amendment adds language pertaining to early completion of the trial (per Document History).",
+      "x-difficulty": "hard",
+      "x-capabilities": ["cross_reference", "inference"]
+    },
+    "total_prior_amendments_before_current": {
+      "type": "integer",
+      "description": "Count of prior amendments listed in the Document History table (everything before the current amendment). Requires scanning the full amendment history.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "multi_page_aggregation"]
+    },
+    "months_from_amendment_13_to_current_amendment": {
+      "type": "integer",
+      "description": "Approximate whole months between Amendment 13 and the current amendment, computed from their dates in the Document History table. Requires date arithmetic.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "multi_field_reasoning"]
+    },
+    "amendment_20_changes_bullet_count": {
+      "type": "integer",
+      "description": "Number of bullet-listed changes described for Amendment 20 specifically in the Protocol Amendment Summary of Changes Table. Requires locating and counting bullets in that one row.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex", "multi_page_aggregation"]
+    },
+    "phase_1_additional_boost_dose_ug": {
+      "type": "number",
+      "description": "Dose (in micrograms) of the additional Phase 1 boost mentioned for boostability characterization. Requires cross-referencing Amendment 13 language with Section 4 design rationale.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["cross_reference"]
+    },
+    "phase_1_booster_window_span_months": {
+      "type": "integer",
+      "description": "Width in months of the boostability-dose window (e.g. if 6\u201312 months, answer is 6). Derived from the phase_1_booster_dose.months_after_primary_series range.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["multi_field_reasoning"]
+    },
+    "blinding_architecture": {
+      "type": ["string", "null"],
+      "enum": ["double_blind", "observer_blind", "single_blind", "open_label", null],
+      "description": "Blinding architecture as stated in the cover-page design descriptors. Tests extraction of a terminology-specific concept.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["inference"]
+    },
+    "sae_collection_window_in_vaccine_naive_through_visit": {
+      "type": ["string", "null"],
+      "description": "In the SAE-collection language for BNT162b2-na\u00efve participants, the last visit through which SAEs are collected (e.g. 'Visit 404'). Requires reading the adverse events section and locating the specific cutoff.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["cross_reference"]
+    },
+    "includes_hiv_specific_assessment_requirements": {
+      "type": "boolean",
+      "description": "Whether the protocol explicitly requires recording HIV viral load and CD4 counts for HIV-positive participants. Tests inference from a specialized sub-population clause.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["cross_reference", "inference"]
+    },
+    "cover_page_header_fields": {
+      "type": "object",
+      "description": "Cover-page header block: product code (e.g. PF-07302048), product name (e.g. 'BNT162 RNA-Based COVID-19 Vaccines'), protocol ID (e.g. C4591001), amendment number, amendment date, sponsor confidentiality label. Tests cover-page dense form region.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["form_region"],
+      "properties": {
+        "product_code": {"type": "string"},
+        "product_name": {"type": "string"},
+        "protocol_id": {"type": "string"},
+        "amendment_number": {"type": "integer"},
+        "amendment_date": {"type": "string"},
+        "confidentiality_label": {"type": ["string", "null"]}
+      },
+      "required": ["product_code", "protocol_id", "amendment_number", "amendment_date"]
+    },
+    "document_history_table_rows": {
+      "type": "array",
+      "description": "Every row of the Document History / Amendment Summary of Changes table: amendment version, date, rationale-summary (may be a multi-bullet cell). Tests long multi-row table with narrative cells \u2014 high risk of off-by-one row corruption.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "version": {"type": "string"},
+          "date": {"type": ["string", "null"]},
+          "rationale_bullets_count": {"type": ["integer", "null"]}
+        },
+        "required": ["version"]
+      }
+    },
+    "schedule_of_activities_phase_1_visit_headers": {
+      "type": "array",
+      "description": "Ordered list of visit-column headers in the Phase 1 Schedule of Activities (SoA) table. The SoA is the canonical complex multi-header table in clinical protocols. Tests reading the full header row in order.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex"],
+      "items": {"type": "string"}
+    },
+    "schedule_of_activities_phase_1_row_labels": {
+      "type": "array",
+      "description": "Ordered list of row labels (assessments/procedures) in the Phase 1 SoA table. Tests reading the full row-label column.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex"],
+      "items": {"type": "string"}
+    },
+    "dose_administration_schedule_phase_1": {
+      "type": "array",
+      "description": "Each row of the Phase 1 dose-administration table: cohort label, dose in \u00b5g, number of participants. Tests row binding on a dose-escalation table.",
+      "x-difficulty": "hard",
+      "x-capabilities": ["table_complex"],
+      "items": {
+        "type": "object",
+        "properties": {
+          "cohort_label": {"type": "string"},
+          "dose_ug": {"type": ["number", "null"]},
+          "participants_count": {"type": ["integer", "null"]}
+        },
+        "required": ["cohort_label"]
+      }
+    }
+  },
+  "required": [
+    "study_title",
+    "protocol_id",
+    "investigational_product_code",
+    "protocol_amendment_number",
+    "sponsor",
+    "phase",
+    "amendment_history",
+    "primary_endpoints"
+  ]
+}

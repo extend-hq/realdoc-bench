@@ -1,0 +1,65 @@
+"""HuggingFace Hub loader for realdoc-bench datasets.
+
+Datasets sit under the ``extend-ai`` org. Private by default during development —
+exporting ``HF_TOKEN`` (or running ``huggingface-cli login``) is required to fetch them.
+"""
+
+from __future__ import annotations
+
+import os
+from pathlib import Path
+
+from realdoc_bench.shared.io.cache import default_cache_root, ensure_dir
+
+
+def fetch_dataset(
+    name: str,
+    *,
+    revision: str | None = None,
+    cache_dir: Path | None = None,
+    token: str | None = None,
+) -> Path:
+    """Download a HF dataset snapshot and return the local path.
+
+    Args:
+        name: ``"<org>/<dataset>"``, e.g. ``"extend-ai/realdoc-layout"``.
+        revision: optional git revision (commit SHA, branch, tag). Pin for reproducibility.
+        cache_dir: local cache root. Defaults to ``~/.cache/realdoc-bench/hf``.
+        token: HF auth token. Falls back to ``HF_TOKEN`` env, then ``huggingface-cli login``.
+    """
+    from huggingface_hub import snapshot_download
+
+    root = ensure_dir(cache_dir or (default_cache_root() / "hf"))
+    auth = token or os.environ.get("HF_TOKEN")
+    return Path(
+        snapshot_download(
+            repo_id=name,
+            repo_type="dataset",
+            revision=revision,
+            cache_dir=str(root),
+            token=auth,
+        )
+    )
+
+
+def upload_dataset(
+    name: str,
+    *,
+    folder: Path,
+    private: bool = True,
+    token: str | None = None,
+    commit_message: str = "Update realdoc-bench dataset",
+) -> str:
+    """Push a local folder up to an HF dataset repo. Returns the commit URL."""
+    from huggingface_hub import HfApi, create_repo
+
+    auth = token or os.environ.get("HF_TOKEN")
+    api = HfApi(token=auth)
+    create_repo(name, repo_type="dataset", private=private, exist_ok=True, token=auth)
+    commit = api.upload_folder(
+        repo_id=name,
+        repo_type="dataset",
+        folder_path=str(folder),
+        commit_message=commit_message,
+    )
+    return commit.commit_url if hasattr(commit, "commit_url") else str(commit)
