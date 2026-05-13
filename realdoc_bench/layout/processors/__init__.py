@@ -29,3 +29,13 @@ try:
     from realdoc_bench.layout.processors import gemini  # noqa: F401
 except ImportError:
     pass
+
+try:
+    from realdoc_bench.layout.processors import gpt  # noqa: F401
+except ImportError:
+    pass
+
+try:
+    from realdoc_bench.layout.processors import dots_ocr  # noqa: F401
+except ImportError:
+    pass

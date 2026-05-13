@@ -36,6 +36,7 @@ paddle_ocr_vl:                  {unit: page,   usd: 0.0}
 elrnd_l_api:                    {unit: page,   usd: 0.0}
 elrnd_l_dev_api:                {unit: page,   usd: 0.0}
 dots_ocr:                       {unit: page,   usd: 0.0}
+glm_ocr_layout:                 {unit: page,   usd: 0.0}
 chandra_ocr:                    {unit: page,   usd: 0.0}
 glm_ocr:                        {unit: page,   usd: 0.0}
 elrnd_lunar_darkness:           {unit: page,   usd: 0.0}
