@@ -30,3 +30,4 @@ datasets/layout/blobs/
 
 # Local OS junk
 .DS_Store
+.claude/
