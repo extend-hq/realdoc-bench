@@ -131,7 +131,7 @@ def _dots_to_vlm_json(elements: list[dict[str, Any]], width: int, height: int) -
 @register_layout_processor("dots_ocr", version="rednote-hilab/dots.ocr-1.5")
 class DotsOcrLayout(LayoutProcessor):
     model: str = "rednote-hilab/dots.ocr"
-    max_tokens: int = 24000
+    max_tokens: int = 12000
 
     def __init__(self) -> None:
         self._client: Any | None = None
