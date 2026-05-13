@@ -105,8 +105,8 @@ def _strip_code_fence(s: str) -> str:
 
 
 class _ClaudeLayoutBase(LayoutProcessor):
-    model: str = "claude-sonnet-4-6"
-    pricing_key: str = "claude_sonnet_4_6"
+    model: str = "claude-sonnet-4-7"
+    pricing_key: str = "claude_sonnet_4_7"
     max_tokens: int = 16384
     max_retries: int = 3
 
@@ -200,10 +200,10 @@ class _ClaudeLayoutBase(LayoutProcessor):
         )
 
 
-@register_layout_processor("sonnet_4_6", version="claude-sonnet-4-6")
+@register_layout_processor("sonnet_4_7", version="claude-sonnet-4-7")
 class SonnetLayout(_ClaudeLayoutBase):
-    model = "claude-sonnet-4-6"
-    pricing_key = "claude_sonnet_4_6"
+    model = "claude-sonnet-4-7"
+    pricing_key = "claude_sonnet_4_7"
 
 
 @register_layout_processor("opus_4_6", version="claude-opus-4-6")

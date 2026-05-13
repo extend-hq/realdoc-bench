@@ -174,7 +174,7 @@ class _GPTLayoutBase(LayoutProcessor):
         )
 
 
-@register_layout_processor("gpt_5_4", version="gpt-5.4")
-class GPT54Layout(_GPTLayoutBase):
-    model = "gpt-5.4"
-    pricing_key = "gpt_5_4"
+@register_layout_processor("gpt_5_5", version="gpt-5.5")
+class GPT55Layout(_GPTLayoutBase):
+    model = "gpt-5.5"
+    pricing_key = "gpt_5_5"
