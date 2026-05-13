@@ -39,3 +39,8 @@ try:
     from realdoc_bench.layout.processors import dots_ocr  # noqa: F401
 except ImportError:
     pass
+
+try:
+    from realdoc_bench.layout.processors import paddle_ocr_vl  # noqa: F401
+except ImportError:
+    pass
