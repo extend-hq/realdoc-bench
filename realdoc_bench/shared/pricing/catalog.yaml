@@ -31,6 +31,8 @@ datalabs_chandra:               {unit: page,   usd: 0.008}
 pymupdf:                        {unit: page,   usd: 0.0}
 gt_self:                        {unit: page,   usd: 0.0}
 paddle_structure:               {unit: page,   usd: 0.0}
+paddle_structure_v3:            {unit: page,   usd: 0.0}
+paddle_ocr_vl:                  {unit: page,   usd: 0.0}
 dots_ocr:                       {unit: page,   usd: 0.0}
 chandra_ocr:                    {unit: page,   usd: 0.0}
 glm_ocr:                        {unit: page,   usd: 0.0}

@@ -30,6 +30,7 @@ dependencies = [
     "extend-ai>=0.10",
     "Pillow>=10.3",
     "requests>=2.32",
+    "httpx>=0.27",
 ]
 
 [project.optional-dependencies]
