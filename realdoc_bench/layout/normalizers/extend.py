@@ -42,7 +42,8 @@ _EXTEND_TO_LAYOUT: dict[str, LayoutBlockType] = {
 
 
 def _classify(block: Any) -> LayoutBlockType | None:
-    bt = _EXTEND_TO_LAYOUT.get(block.type)
+    raw_type = getattr(block.type, "value", block.type)
+    bt = _EXTEND_TO_LAYOUT.get(raw_type)
     if bt is not None:
         return bt
     details = block.details
@@ -88,7 +89,11 @@ def to_layout_document(run: Any, *, source: str | None = None) -> LayoutDocument
     pages_map: dict[int, list[LayoutBlock]] = {}
     page_dimensions: dict[int, tuple[int, int]] = {}
 
-    for chunk in getattr(run, "chunks", []) or []:
+    output = getattr(run, "output", None)
+    chunks = getattr(output, "chunks", None) if output is not None else None
+    if chunks is None:
+        chunks = getattr(run, "chunks", []) or []
+    for chunk in chunks:
         for block in chunk.blocks:
             bt = _classify(block)
             if bt is None:

@@ -10,6 +10,8 @@ from __future__ import annotations
 
 import csv
 import json
+import os
+import sys
 from collections.abc import Iterable, Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -72,13 +74,21 @@ def load(
     if domains is not None:
         keep_domains = set(domains)
         rows = [r for r in rows if r["domain"] in keep_domains]
-    if limit is not None:
+    skip_missing = bool(os.environ.get("REALDOC_BENCH_SKIP_MISSING_BLOBS"))
+    if not skip_missing and limit is not None:
         rows = rows[:limit]
-
+    yielded = 0
     for row in rows:
         page_id = row["pageId"]
-        image_path, coco = _load_blobs(snapshot, page_id)
+        try:
+            image_path, coco = _load_blobs(snapshot, page_id)
+        except FileNotFoundError:
+            if skip_missing:
+                print(f"warning: skipping {page_id} (blob missing under {snapshot})", file=sys.stderr)
+                continue
+            raise
         gt = normalize_coco(coco, source=image_path.name)
+        yielded += 1
         yield LayoutSample(
             page_id=page_id,
             split=row["split"],
@@ -88,3 +98,5 @@ def load(
             source_url=row.get("sourceUrl") or None,
             original_image_url=row.get("originalImageUrl") or None,
         )
+        if limit is not None and yielded >= limit:
+            return

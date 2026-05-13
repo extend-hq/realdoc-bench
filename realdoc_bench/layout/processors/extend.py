@@ -24,6 +24,16 @@ from realdoc_bench.layout.processors.base import (
 from realdoc_bench.shared.io.cache import sha256_text
 from realdoc_bench.shared.pricing.meter import parse_cost
 
+_STAGING_URL = "https://api.staging.extend.ai"
+_PROD_URL = "https://api.extend.ai"
+
+
+def _base_url_for_key(key: str) -> str:
+    explicit = os.environ.get("EXTEND_BASE_URL")
+    if explicit:
+        return explicit
+    return _STAGING_URL if key.startswith("sk_test_") else _PROD_URL
+
 
 class _ExtendBase(LayoutProcessor):
     engine: str = "parse_performance"
@@ -38,7 +48,10 @@ class _ExtendBase(LayoutProcessor):
         if self._client is None:
             from extend_ai import Extend  # imported lazily
 
-            self._client = Extend(api_key=os.environ.get("EXTEND_API_KEY"))
+            token = os.environ.get("EXTEND_API_KEY")
+            if not token:
+                raise RuntimeError("EXTEND_API_KEY not set")
+            self._client = Extend(token=token, base_url=_base_url_for_key(token))
         return self._client
 
     def config_hash(self) -> str:
@@ -65,7 +78,12 @@ class _ExtendBase(LayoutProcessor):
             "target": self.target,
             **self.config_extra,
         }
-        run = client.parse.run(file_path=str(image_path), config=config, wait=True)
+        with image_path.open("rb") as f:
+            uploaded = client.files.upload(file=f)
+        run = client.parse_runs.create_and_poll(
+            file={"id": uploaded.id},
+            config=config,
+        )
         latency = time.perf_counter() - t0
         document = to_layout_document(run, source=image_path.name)
         return ProcessorResult(

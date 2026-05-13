@@ -20,6 +20,16 @@ from realdoc_bench.extraction.parsers.base import (
 from realdoc_bench.shared.io.cache import sha256_text
 from realdoc_bench.shared.pricing.meter import parse_cost
 
+_STAGING_URL = "https://api.staging.extend.ai"
+_PROD_URL = "https://api.extend.ai"
+
+
+def _base_url_for_key(key: str) -> str:
+    explicit = os.environ.get("EXTEND_BASE_URL")
+    if explicit:
+        return explicit
+    return _STAGING_URL if key.startswith("sk_test_") else _PROD_URL
+
 
 class _ExtendParserBase(ParseProvider):
     engine: str = "parse_performance"
@@ -34,7 +44,11 @@ class _ExtendParserBase(ParseProvider):
         if self._client is None:
             from extend_ai import Extend
 
-            self._client = Extend(api_key=os.environ.get("EXTEND_API_KEY"))
+            token = os.environ.get("EXTEND_API_KEY")
+            if not token:
+                raise RuntimeError("EXTEND_API_KEY not set")
+            base_url = _base_url_for_key(token)
+            self._client = Extend(token=token, base_url=base_url)
         return self._client
 
     def config_hash(self) -> str:
@@ -60,7 +74,12 @@ class _ExtendParserBase(ParseProvider):
             "target": self.target,
             **self.config_extra,
         }
-        run = client.parse.run(file_path=str(pdf_path), config=config, wait=True)
+        with pdf_path.open("rb") as f:
+            uploaded = client.files.upload(file=f)
+        run = client.parse_runs.create_and_poll(
+            file={"id": uploaded.id},
+            config=config,
+        )
         latency = time.perf_counter() - t0
         markdown = _markdown_from_run(run)
         pages = _page_count(run)
@@ -77,28 +96,42 @@ class _ExtendParserBase(ParseProvider):
 
 
 def _markdown_from_run(run: Any) -> str:
-    chunks = getattr(run, "chunks", None) or []
+    output = getattr(run, "output", None)
+    chunks = getattr(output, "chunks", None) if output is not None else None
+    if chunks is None:
+        chunks = getattr(run, "chunks", None) or []
     pieces: list[str] = []
     for c in chunks:
         content = getattr(c, "content", "") or ""
         if content:
             pieces.append(content)
-    if not pieces:
-        output = getattr(run, "output", None) or {}
+    if pieces:
+        return "\n\n".join(pieces)
+    if output is not None:
+        md = getattr(output, "markdown", None)
+        if isinstance(md, str):
+            return md
         if isinstance(output, dict) and isinstance(output.get("markdown"), str):
             return output["markdown"]
-    return "\n\n".join(pieces)
+    return ""
 
 
 def _page_count(run: Any) -> int | None:
-    output = getattr(run, "output", None) or {}
+    metrics = getattr(run, "metrics", None)
+    if metrics is not None:
+        pages = getattr(metrics, "page_count", None)
+        if isinstance(pages, (int, float)):
+            return int(pages)
+        if isinstance(metrics, dict):
+            pages = metrics.get("page_count") or metrics.get("pageCount")
+            if isinstance(pages, (int, float)):
+                return int(pages)
+    output = getattr(run, "output", None)
     if isinstance(output, dict):
         pages = output.get("pageCount") or output.get("page_count")
-        if isinstance(pages, int):
-            return pages
-    metrics = getattr(run, "metrics", None) or {}
-    pages = metrics.get("page_count") if isinstance(metrics, dict) else None
-    return pages if isinstance(pages, int) else None
+        if isinstance(pages, (int, float)):
+            return int(pages)
+    return None
 
 
 @register_parser("extend_performance_v1_0_0", version="1.0.0")
