@@ -36,17 +36,17 @@ class Gemini3FlashParser(GeminiVisionParserBase):
     prompt = _MARKDOWN_PROMPT
 
 
-@register_parser("claude_sonnet_4_7", version="claude-sonnet-4-7")
+@register_parser("claude_sonnet_4_6", version="claude-sonnet-4-6")
 class SonnetParser(AnthropicVisionParserBase):
-    model = "claude-sonnet-4-7"
-    pricing_key = "claude_sonnet_4_7"
+    model = "claude-sonnet-4-6"
+    pricing_key = "claude_sonnet_4_6"
     prompt = _MARKDOWN_PROMPT
     max_tokens = 16384
 
 
-@register_parser("claude_opus_4_6", version="claude-opus-4-6")
+@register_parser("claude_opus_4_7", version="claude-opus-4-7")
 class OpusParser(AnthropicVisionParserBase):
-    model = "claude-opus-4-6"
-    pricing_key = "claude_opus_4_6"
+    model = "claude-opus-4-7"
+    pricing_key = "claude_opus_4_7"
     prompt = _MARKDOWN_PROMPT
     max_tokens = 16384

@@ -66,13 +66,17 @@ class GeminiExtractor(ExtractionAgent):
                 user += f"\n\nPrevious attempt failed validation:\n{last_error}\n\nFix and retry."
             t0 = time.perf_counter()
             try:
+                # NB: we deliberately do NOT pass ``response_schema``. Gemini's
+                # structured-output schema is an OpenAPI subset that rejects
+                # draft-07 union-typed nullables (``type: ["integer","null"]``)
+                # and most ``format`` keywords. Instead we keep JSON mode, embed
+                # the schema in the prompt, and validate + retry ourselves.
                 resp = client.models.generate_content(
                     model=self.model,
                     contents=[{"role": "user", "parts": [{"text": user}]}],
                     config={
                         "system_instruction": _SYSTEM,
                         "response_mime_type": "application/json",
-                        "response_schema": plain_schema,
                     },
                 )
             except Exception as e:

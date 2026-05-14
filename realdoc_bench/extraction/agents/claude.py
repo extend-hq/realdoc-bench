@@ -34,9 +34,9 @@ def _render_user(markdown: str, schema: dict[str, Any]) -> str:
     )
 
 
-@register_agent("claude_sonnet_4_7", version="1.0.0")
+@register_agent("claude_sonnet_4_6", version="1.0.0")
 class ClaudeExtractor(ExtractionAgent):
-    model = "claude-sonnet-4-7"
+    model = "claude-sonnet-4-6"
     max_tokens = 4096
 
     def __init__(self) -> None:
@@ -123,7 +123,7 @@ class ClaudeExtractor(ExtractionAgent):
                 latency_sec=latency_total,
                 usage=usage_total,
                 cost_estimate_usd=agent_cost(
-                    "claude_sonnet_4_7",
+                    "claude_sonnet_4_6",
                     input_tokens=usage_total["input_tokens"],
                     output_tokens=usage_total["output_tokens"],
                 ),
@@ -135,7 +135,7 @@ class ClaudeExtractor(ExtractionAgent):
             latency_sec=latency_total,
             usage=usage_total,
             cost_estimate_usd=agent_cost(
-                "claude_sonnet_4_7",
+                "claude_sonnet_4_6",
                 input_tokens=usage_total["input_tokens"],
                 output_tokens=usage_total["output_tokens"],
             ),
