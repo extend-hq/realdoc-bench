@@ -1,0 +1,43 @@
+# Truss config for an OpenAI-compatible vLLM deployment on Baseten.
+#
+# This file is a TEMPLATE — `baseten/deploy.py` fills in the {{ ... }} fields
+# and writes the rendered config into a temp truss dir before `truss push`.
+# It uses Truss's `docker_server` mode so the container simply runs
+# `vllm serve`; Baseten then exposes the model at an OpenAI-compatible URL
+# (…/sync/v1/chat/completions), which realdoc-bench's existing OpenAI-SDK
+# adapters can hit directly by pointing <MODEL>_BASE_URL at it.
+model_name: "{{ model_name }}"
+description: "realdoc-bench OCR/layout model — {{ hf_model }} served via vLLM"
+
+resources:
+  accelerator: "{{ accelerator }}"
+  use_gpu: true
+
+# vLLM pulls weights from HF at boot; cache them in the image layer so cold
+# starts are fast and reproducible.
+model_cache:
+  - repo_id: "{{ hf_model }}"
+    use_volume: true
+    volume_folder: "{{ volume_folder }}"
+
+docker_server:
+  start_command: >-
+    sh -c "vllm serve {{ hf_model }}
+    --port 8000
+    --served-model-name {{ hf_model }}
+    --trust-remote-code
+    --gpu-memory-utilization {{ gpu_mem_util }}
+    --max-model-len {{ max_model_len }}
+    {{ extra_vllm_args }}"
+  server_port: 8000
+  predict_endpoint: /v1/chat/completions
+  readiness_endpoint: /health
+  liveness_endpoint: /health
+
+runtime:
+  predict_concurrency: {{ predict_concurrency }}
+
+# dots.mocr / GLM-OCR / PaddleOCR-VL are public HF repos — no token needed.
+# For a gated repo: add an `hf_access_token` secret in the Baseten workspace,
+# then declare `secrets: {hf_access_token: null}` here and map it to the
+# HF_TOKEN env var per the Truss secrets docs — vLLM reads HF_TOKEN at boot.
