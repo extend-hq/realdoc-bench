@@ -62,6 +62,11 @@ class VisionParserBase(ParseProvider):
     max_tokens: int = 12000
     dpi: int = DEFAULT_DPI
     pricing_key: str = ""
+    # Pages are independent — fan them out concurrently. Cloud APIs (Claude /
+    # Gemini) and a batching vLLM endpoint both handle this fine; it turns an
+    # N-page sequential parse into ~N/page_concurrency wall-clock. Override per
+    # subclass or via the ``RDB_PAGE_CONCURRENCY`` env var.
+    page_concurrency: int = 8
 
     @abstractmethod
     def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]: ...
@@ -71,12 +76,26 @@ class VisionParserBase(ParseProvider):
 
     def parse(self, pdf_path: Path, *, cache_dir: Path | None = None) -> ParseResult:
         del cache_dir
+        import concurrent.futures
+        import os as _os
+
         t0 = time.perf_counter()
         pages = _render_pdf_pages(pdf_path, self.dpi)
+        concurrency = max(1, int(_os.environ.get("RDB_PAGE_CONCURRENCY", self.page_concurrency)))
+
+        results: list[tuple[str, int, int]] = [("", 0, 0)] * len(pages)
+        if concurrency == 1 or len(pages) <= 1:
+            for i, png in enumerate(pages):
+                results[i] = self._call_page(png)
+        else:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=concurrency) as pool:
+                futs = {pool.submit(self._call_page, png): i for i, png in enumerate(pages)}
+                for fut in concurrent.futures.as_completed(futs):
+                    results[futs[fut]] = fut.result()
+
         page_md: list[str] = []
         in_tok = out_tok = 0
-        for i, png in enumerate(pages, start=1):
-            raw, it, ot = self._call_page(png)
+        for i, (raw, it, ot) in enumerate(results, start=1):
             in_tok += it
             out_tok += ot
             page_md.append(f"## Page {i}\n\n{self._page_to_markdown(raw, i)}".rstrip())
