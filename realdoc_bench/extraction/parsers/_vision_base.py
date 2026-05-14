@@ -1,14 +1,16 @@
-"""Shared base for vision-model parse providers (dots.mocr, GLM-OCR, …).
+"""Shared base for vision-model parse providers.
 
-These models are per-image, OpenAI-compatible vLLM endpoints. The base:
+These models are per-image: a PDF is rendered page-by-page, each page image is
+sent to the model with a markdown-extraction prompt, and the per-page markdown
+is concatenated. Two SDK families are supported:
 
-1. Renders each PDF page to a PNG via PyMuPDF (configurable DPI).
-2. Sends each page image + a markdown-extraction prompt to the endpoint.
-3. Concatenates per-page markdown into one document.
+- :class:`OpenAIVisionParserBase` — OpenAI-compatible vLLM endpoints
+  (dots.mocr, GLM-OCR self-hosted).
+- :class:`AnthropicVisionParserBase` / :class:`GeminiVisionParserBase` — the
+  Claude and Gemini cloud APIs.
 
-Subclasses provide the prompt and a ``_page_to_markdown`` that turns one raw
-model response into markdown for that page. Connection errors are retried
-with backoff (the endpoints are typically reached over a flappy SSH tunnel).
+Cost is page-based when the catalog rate is a ``PageRate`` and token-based when
+it's a ``TokenRate`` (cloud VLMs). Connection errors are retried with backoff.
 """
 
 from __future__ import annotations
@@ -16,11 +18,12 @@ from __future__ import annotations
 import base64
 import os
 import time
+from abc import abstractmethod
 from pathlib import Path
 from typing import Any
 
 from realdoc_bench.extraction.parsers.base import ParseProvider, ParseResult
-from realdoc_bench.shared.pricing.meter import parse_cost
+from realdoc_bench.shared.pricing.meter import agent_cost, parse_cost
 
 DEFAULT_DPI = 150
 DEFAULT_TIMEOUT_SEC = 300.0
@@ -46,22 +49,68 @@ def _render_pdf_pages(pdf_path: Path, dpi: int) -> list[bytes]:
 
 
 class VisionParserBase(ParseProvider):
-    """Base class for OpenAI-compatible vision parse providers.
+    """Renders a PDF to page images and concatenates per-page markdown.
 
     Subclass contract:
-    - ``base_url_env`` / ``model_env`` — env vars for endpoint + model id
-    - ``default_base_url`` / ``default_model``
-    - ``prompt`` — the per-page extraction prompt
-    - ``_page_to_markdown(raw_text, page_no)`` — raw response → markdown
+    - ``prompt`` — the per-page extraction prompt.
+    - ``_call_page(png_bytes)`` → ``(raw_text, input_tokens, output_tokens)``.
+    - ``_page_to_markdown(raw_text, page_no)`` — raw response → markdown.
+    - ``pricing_key`` — catalog key for cost (page- or token-rate).
     """
+
+    prompt: str = "Convert this document page to clean, faithful Markdown."
+    max_tokens: int = 12000
+    dpi: int = DEFAULT_DPI
+    pricing_key: str = ""
+
+    @abstractmethod
+    def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]: ...
+
+    def _page_to_markdown(self, raw_text: str, page_no: int) -> str:
+        return raw_text.strip()
+
+    def parse(self, pdf_path: Path, *, cache_dir: Path | None = None) -> ParseResult:
+        del cache_dir
+        t0 = time.perf_counter()
+        pages = _render_pdf_pages(pdf_path, self.dpi)
+        page_md: list[str] = []
+        in_tok = out_tok = 0
+        for i, png in enumerate(pages, start=1):
+            raw, it, ot = self._call_page(png)
+            in_tok += it
+            out_tok += ot
+            page_md.append(f"## Page {i}\n\n{self._page_to_markdown(raw, i)}".rstrip())
+        latency = time.perf_counter() - t0
+        markdown = "\n\n".join(page_md)
+
+        key = self.pricing_key or self.name
+        cost = parse_cost(key, pages=len(pages))
+        if cost is None:  # token-rated provider
+            cost = agent_cost(key, input_tokens=in_tok, output_tokens=out_tok)
+
+        return ParseResult(
+            markdown=markdown,
+            page_count=len(pages),
+            latency_sec=latency,
+            cost_estimate_usd=cost,
+            pages_processed=len(pages),
+            provider=self.name,
+            version=self.version,
+            config_hash=self.config_hash(),
+            raw={"input_tokens": in_tok, "output_tokens": out_tok} if (in_tok or out_tok) else None,
+        )
+
+
+# ── OpenAI-compatible (vLLM) ────────────────────────────────────────────────
+
+
+class OpenAIVisionParserBase(VisionParserBase):
+    """For OpenAI-compatible vLLM endpoints (dots.mocr, GLM-OCR self-hosted)."""
 
     base_url_env: str = ""
     model_env: str = ""
     default_base_url: str = "http://localhost:8000/v1"
     default_model: str = ""
-    prompt: str = "Convert this document page to clean Markdown."
-    max_tokens: int = 12000
-    dpi: int = DEFAULT_DPI
 
     def __init__(self) -> None:
         self._client: Any | None = None
@@ -80,11 +129,7 @@ class VisionParserBase(ParseProvider):
             self._client = self._new_client()
         return self._client
 
-    def _page_to_markdown(self, raw_text: str, page_no: int) -> str:
-        """Subclasses override to post-process the raw model response."""
-        return raw_text.strip()
-
-    def _call_page(self, png_bytes: bytes) -> str:
+    def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]:
         encoded = base64.b64encode(png_bytes).decode("utf-8")
         data_url = f"data:image/png;base64,{encoded}"
         last_err: Exception | None = None
@@ -104,32 +149,120 @@ class VisionParserBase(ParseProvider):
                         }
                     ],
                 )
-                return resp.choices[0].message.content or "" if resp.choices else ""
-            except Exception as e:  # noqa: BLE001 — connection/timeout/5xx all retryable
+                text = resp.choices[0].message.content or "" if resp.choices else ""
+                usage = getattr(resp, "usage", None)
+                it = getattr(usage, "prompt_tokens", 0) or 0 if usage else 0
+                ot = getattr(usage, "completion_tokens", 0) or 0 if usage else 0
+                return text, int(it), int(ot)
+            except Exception as e:  # noqa: BLE001
                 last_err = e
                 self._client = None
                 if attempt + 1 < MAX_RETRIES:
                     time.sleep(RETRY_BACKOFF_SEC * (attempt + 1))
         raise RuntimeError(f"{self.name} page request failed after {MAX_RETRIES} attempts: {last_err}")
 
-    def parse(self, pdf_path: Path, *, cache_dir: Path | None = None) -> ParseResult:
-        del cache_dir
-        t0 = time.perf_counter()
-        pages = _render_pdf_pages(pdf_path, self.dpi)
-        page_md: list[str] = []
-        for i, png in enumerate(pages, start=1):
-            raw = self._call_page(png)
-            md = self._page_to_markdown(raw, i)
-            page_md.append(f"## Page {i}\n\n{md}".rstrip())
-        latency = time.perf_counter() - t0
-        markdown = "\n\n".join(page_md)
-        return ParseResult(
-            markdown=markdown,
-            page_count=len(pages),
-            latency_sec=latency,
-            cost_estimate_usd=parse_cost(self.name, pages=len(pages)),
-            pages_processed=len(pages),
-            provider=self.name,
-            version=self.version,
-            config_hash=self.config_hash(),
-        )
+
+# ── Anthropic Claude ────────────────────────────────────────────────────────
+
+
+class AnthropicVisionParserBase(VisionParserBase):
+    """For the Anthropic Claude API (Sonnet / Opus as a parse pipeline)."""
+
+    model: str = ""
+
+    def __init__(self) -> None:
+        self._client: Any | None = None
+
+    def _ensure_client(self) -> Any:
+        if self._client is None:
+            from anthropic import Anthropic
+
+            self._client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
+        return self._client
+
+    def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]:
+        encoded = base64.b64encode(png_bytes).decode("utf-8")
+        last_err: Exception | None = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                client = self._ensure_client()
+                resp = client.messages.create(
+                    model=self.model,
+                    max_tokens=self.max_tokens,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image",
+                                    "source": {
+                                        "type": "base64",
+                                        "media_type": "image/png",
+                                        "data": encoded,
+                                    },
+                                },
+                                {"type": "text", "text": self.prompt},
+                            ],
+                        }
+                    ],
+                )
+                text = "".join(
+                    b.text for b in resp.content if getattr(b, "type", None) == "text"
+                )
+                usage = getattr(resp, "usage", None)
+                it = getattr(usage, "input_tokens", 0) or 0 if usage else 0
+                ot = getattr(usage, "output_tokens", 0) or 0 if usage else 0
+                return text, int(it), int(ot)
+            except Exception as e:  # noqa: BLE001
+                last_err = e
+                msg = str(e).lower()
+                self._client = None
+                if attempt + 1 < MAX_RETRIES:
+                    time.sleep(RETRY_BACKOFF_SEC * (attempt + 1) if "rate" in msg or "overload" in msg else RETRY_BACKOFF_SEC)
+        raise RuntimeError(f"{self.name} page request failed after {MAX_RETRIES} attempts: {last_err}")
+
+
+# ── Google Gemini ───────────────────────────────────────────────────────────
+
+
+class GeminiVisionParserBase(VisionParserBase):
+    """For the Google Gemini API (Gemini 3 as a parse pipeline)."""
+
+    model: str = ""
+
+    def __init__(self) -> None:
+        self._client: Any | None = None
+
+    def _ensure_client(self) -> Any:
+        if self._client is None:
+            from google import genai
+
+            api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+            self._client = genai.Client(api_key=api_key)
+        return self._client
+
+    def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]:
+        from google.genai import types
+
+        last_err: Exception | None = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                client = self._ensure_client()
+                resp = client.models.generate_content(
+                    model=self.model,
+                    contents=[
+                        types.Part.from_bytes(data=png_bytes, mime_type="image/png"),
+                        self.prompt,
+                    ],
+                )
+                text = resp.text or ""
+                usage = getattr(resp, "usage_metadata", None)
+                it = getattr(usage, "prompt_token_count", 0) or 0 if usage else 0
+                ot = getattr(usage, "candidates_token_count", 0) or 0 if usage else 0
+                return text, int(it), int(ot)
+            except Exception as e:  # noqa: BLE001
+                last_err = e
+                self._client = None
+                if attempt + 1 < MAX_RETRIES:
+                    time.sleep(RETRY_BACKOFF_SEC * (attempt + 1))
+        raise RuntimeError(f"{self.name} page request failed after {MAX_RETRIES} attempts: {last_err}")

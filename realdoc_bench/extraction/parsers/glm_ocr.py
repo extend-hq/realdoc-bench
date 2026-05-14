@@ -18,7 +18,7 @@ Note: there are two GLM-OCRs in play —
 
 from __future__ import annotations
 
-from realdoc_bench.extraction.parsers._vision_base import VisionParserBase
+from realdoc_bench.extraction.parsers._vision_base import OpenAIVisionParserBase
 from realdoc_bench.extraction.parsers.base import register_parser
 
 _MARKDOWN_PROMPT = (
@@ -32,12 +32,13 @@ _MARKDOWN_PROMPT = (
 
 
 @register_parser("glm_ocr", version="zai-org/GLM-OCR")
-class GlmOcrParser(VisionParserBase):
+class GlmOcrParser(OpenAIVisionParserBase):
     base_url_env = "GLM_OCR_BASE_URL"
     model_env = "GLM_OCR_MODEL"
     default_base_url = "http://localhost:8002/v1"
     default_model = "zai-org/GLM-OCR"
     prompt = _MARKDOWN_PROMPT
+    pricing_key = "glm_ocr"
     max_tokens = 12000
 
     def _page_to_markdown(self, raw_text: str, page_no: int) -> str:

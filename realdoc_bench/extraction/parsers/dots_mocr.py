@@ -17,7 +17,7 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from realdoc_bench.extraction.parsers._vision_base import VisionParserBase
+from realdoc_bench.extraction.parsers._vision_base import OpenAIVisionParserBase
 from realdoc_bench.extraction.parsers.base import register_parser
 
 _LAYOUT_ALL_PROMPT = (
@@ -78,12 +78,13 @@ def _extract_elements(raw: str) -> list[dict[str, Any]]:
 
 
 @register_parser("dots_mocr", version="rednote-hilab/dots.mocr")
-class DotsMocrParser(VisionParserBase):
+class DotsMocrParser(OpenAIVisionParserBase):
     base_url_env = "DOTS_OCR_BASE_URL"
     model_env = "DOTS_OCR_MODEL"
     default_base_url = "http://localhost:8001/v1"
     default_model = "rednote-hilab/dots.mocr"
     prompt = _LAYOUT_ALL_PROMPT
+    pricing_key = "dots_mocr"
     max_tokens = 12000
 
     def _page_to_markdown(self, raw_text: str, page_no: int) -> str:
