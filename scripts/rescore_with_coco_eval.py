@@ -40,14 +40,23 @@ DEFAULT_HF_DATASET = "extend-ai/realdoc-layout"
 # down to its LayoutBlockType vocab (most of the collapses already happened
 # there — the remaining ones below align pred and GT on the final 9 buckets).
 REMAP_9CLASS: dict[str, str] = {
-    # No-ops on realdoc-bench's vocab (coco normalizer already did the collapse
-    # to "text"), but kept here for clarity / when extra block types appear in
-    # predictions.
     "figure_caption": "text",
     "footnote": "text",
     "formula": "text",
     "list_item": "text",
     "barcode": "figure",
+}
+
+# Permissive scheme for models with limited vocab (dots.mocr, Paddle V3 etc):
+# everything they can't structurally predict gets folded into Text on BOTH
+# pred and GT side. Mirrors the original Notion benchmark's
+# "Key-values treated as text here to ensure fair comparison" note,
+# generalized for additional classes.
+REMAP_PERMISSIVE: dict[str, str] = {
+    **REMAP_9CLASS,
+    "title": "text",
+    "key_value": "text",
+    "page_number": "text",
 }
 
 SKIP_9CLASS = frozenset({"signature"})  # not part of the 9-class scheme
@@ -100,9 +109,13 @@ def main() -> int:
     parser.add_argument("--iou", type=float, default=0.5)
     parser.add_argument(
         "--remap-default",
-        choices=("none", "9class"),
+        choices=("none", "9class", "permissive"),
         default="9class",
-        help="Apply built-in class_remap for the 9-class benchmark scheme.",
+        help=(
+            "Apply built-in class_remap. 9class: the standard benchmark scheme. "
+            "permissive: also folds Title/Key Value/Page Number into Text (for "
+            "models that structurally can't predict those, like dots.mocr)."
+        ),
     )
     parser.add_argument(
         "--remap",
@@ -124,6 +137,8 @@ def main() -> int:
     remap: dict[str, str] = {}
     if args.remap_default == "9class":
         remap.update(REMAP_9CLASS)
+    elif args.remap_default == "permissive":
+        remap.update(REMAP_PERMISSIVE)
     for r in args.remap:
         if "=" not in r:
             raise SystemExit(f"--remap must be src=dst, got {r!r}")

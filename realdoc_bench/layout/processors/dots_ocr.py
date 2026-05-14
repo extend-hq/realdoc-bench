@@ -51,8 +51,51 @@ DOTS_PROMPT = (
     "5. Final Output: The entire output must be a single JSON object.\n"
 )
 
-# Map dots-ocr categories to the realdoc-bench LayoutBlockType vocabulary,
-# already pre-collapsed where appropriate so downstream 9-class remap works.
+# Map dots.mocr categories to realdoc-bench's vlm_json intermediate vocabulary.
+# Keys are normalized (lowercase, hyphen/space → underscore) so case + separator
+# variants from the model all hit the same bucket.
+_DOTS_RAW_TO_VLM: dict[str, str] = {
+    "text": "text",
+    "title": "heading",
+    "section_header": "section_heading",
+    "section_heading": "section_heading",
+    "subheading": "section_heading",
+    "heading": "heading",
+    "table": "table",
+    "picture": "figure",
+    "figure": "figure",
+    "image": "figure",
+    "chart": "figure",
+    "caption": "figure_caption",
+    "figure_caption": "figure_caption",
+    "table_caption": "figure_caption",
+    "formula": "formula",
+    "equation": "formula",
+    "list_item": "list_item",
+    "list": "list_item",
+    "page_footer": "page_footer",
+    "footer": "page_footer",
+    "page_header": "page_header",
+    "header": "page_header",
+    "footnote": "footnote",
+    "endnote": "footnote",
+    "page_number": "page_number",
+    "key_value": "key_value",
+    "form": "key_value",
+}
+
+
+def _normalize_category(name: str) -> str:
+    """Lowercase + collapse hyphens / spaces to underscores so 'Page-header',
+    'page header', 'Page_Header' all hit the same key."""
+    return name.strip().lower().replace("-", "_").replace(" ", "_")
+
+
+def _category_to_vlm_type(name: str) -> str | None:
+    return _DOTS_RAW_TO_VLM.get(_normalize_category(name))
+
+
+# Backwards-compatible export — used by tests / external code.
 DOTS_CATEGORY_TO_VLM_TYPE: dict[str, str] = {
     "Text": "text",
     "Title": "heading",
@@ -128,9 +171,9 @@ def _parse_dots_array(text: str) -> list[dict[str, Any]]:
 def _dots_to_vlm_json(elements: list[dict[str, Any]], width: int, height: int) -> dict[str, Any]:
     blocks: list[dict[str, Any]] = []
     for idx, e in enumerate(elements, start=1):
-        cat = e.get("category", "Text")
-        bt = DOTS_CATEGORY_TO_VLM_TYPE.get(cat, "text")
-        bb = e.get("bbox") or []
+        cat = e.get("category") or e.get("type") or e.get("label") or "Text"
+        bt = _category_to_vlm_type(cat) or "text"
+        bb = e.get("bbox") or e.get("box") or []
         if len(bb) < 4:
             continue
         blocks.append(
@@ -158,14 +201,25 @@ class DotsOcrLayout(LayoutProcessor):
     def __init__(self) -> None:
         self._client: Any | None = None
 
+    # Connection errors are common when the vLLM endpoint is reached over an
+    # SSH tunnel that can flap. Retry the whole request a few times with
+    # backoff; rebuild the client each attempt so a dropped connection pool
+    # doesn't poison subsequent calls.
+    max_retries: int = 6
+    retry_backoff_sec: float = 5.0
+
+    def _new_client(self) -> Any:
+        from openai import OpenAI
+
+        base_url = os.environ.get("DOTS_OCR_BASE_URL", "http://localhost:8000/v1")
+        api_key = os.environ.get("DOTS_OCR_API_KEY") or "EMPTY"
+        self._model_id = os.environ.get("DOTS_OCR_MODEL") or self.model
+        # Per-request timeout generous enough for a 12k-token layout dump.
+        return OpenAI(api_key=api_key, base_url=base_url, timeout=300.0, max_retries=0)
+
     def _ensure_client(self) -> Any:
         if self._client is None:
-            from openai import OpenAI
-
-            base_url = os.environ.get("DOTS_OCR_BASE_URL", "http://localhost:8000/v1")
-            api_key = os.environ.get("DOTS_OCR_API_KEY") or "EMPTY"
-            self._model_id = os.environ.get("DOTS_OCR_MODEL") or self.model
-            self._client = OpenAI(api_key=api_key, base_url=base_url)
+            self._client = self._new_client()
         return self._client
 
     def config_hash(self) -> str:
@@ -173,7 +227,6 @@ class DotsOcrLayout(LayoutProcessor):
 
     def predict(self, image_path: Path, *, gt: LayoutDocument | None = None) -> ProcessorResult:
         del gt
-        client = self._ensure_client()
         width, height = _image_dims(image_path)
         raw = image_path.read_bytes()
         mime = _detect_mime(raw)
@@ -181,19 +234,34 @@ class DotsOcrLayout(LayoutProcessor):
         data_url = f"data:{mime};base64,{encoded}"
 
         t0 = time.perf_counter()
-        response = client.chat.completions.create(
-            model=self._model_id,
-            max_completion_tokens=self.max_tokens,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {"type": "text", "text": DOTS_PROMPT},
-                        {"type": "image_url", "image_url": {"url": data_url}},
+        response = None
+        last_err: Exception | None = None
+        for attempt in range(self.max_retries):
+            try:
+                client = self._ensure_client()
+                response = client.chat.completions.create(
+                    model=self._model_id,
+                    max_completion_tokens=self.max_tokens,
+                    messages=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "text", "text": DOTS_PROMPT},
+                                {"type": "image_url", "image_url": {"url": data_url}},
+                            ],
+                        }
                     ],
-                }
-            ],
-        )
+                )
+                break
+            except Exception as e:  # noqa: BLE001 — connection / timeout / 5xx all retryable
+                last_err = e
+                self._client = None  # force a fresh client (+ fresh conn pool) next try
+                if attempt + 1 < self.max_retries:
+                    time.sleep(self.retry_backoff_sec * (attempt + 1))
+        if response is None:
+            raise RuntimeError(
+                f"dots_ocr request failed after {self.max_retries} attempts: {last_err}"
+            )
         latency = time.perf_counter() - t0
 
         content = response.choices[0].message.content if response.choices else ""
