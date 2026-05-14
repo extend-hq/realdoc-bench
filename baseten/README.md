@@ -71,6 +71,27 @@ The `_KEY` suffix env var is read by realdoc-bench's `OpenAIVisionParserBase` /
 processor clients and passed as the OpenAI `api_key` — set it to your
 `BASETEN_API_KEY`.
 
+## Known issue: gateway health probe
+
+`truss push` → image build → vLLM boot → deployment `ACTIVE` all work. But with
+the `vllm/vllm-openai` base image + `docker_server` config, Baseten's **gateway**
+can report `Model is unhealthy, it is not ready to make predictions` (HTTP 500)
+even though the container's vLLM is up (`Application startup complete`,
+`/metrics`→200 in the replica logs, and predict requests never reach the
+container). The gateway↔container readiness handshake isn't passing.
+
+Things to try (not yet resolved here):
+- Confirm what Baseten's `docker_server` probes for readiness — it may POST to
+  `predict_endpoint` rather than GET `readiness_endpoint`. vLLM 400s on a
+  malformed body, which the gateway could read as unhealthy.
+- Point `readiness_endpoint` / `liveness_endpoint` at a route that 200s on a
+  bare GET (`/health` should, `/ping` in some vLLM builds).
+- Add a startup grace period / bump probe thresholds.
+- Or wrap vLLM in a tiny FastAPI shim that exposes an unambiguous `/health`.
+
+Until that's nailed down, **awsl4 + the SSH tunnel** is the working path for
+self-hosted models (see `realdoc-bench`'s `*_BASE_URL` env vars).
+
 ## Notes
 
 - `predict_concurrency` (default 32) lets one replica batch many in-flight
