@@ -54,3 +54,4 @@ claude_sonnet_4_7:              {unit: tokens, input_usd_per_1k: 0.003,  output_
 claude_opus_4_6:                {unit: tokens, input_usd_per_1k: 0.015,  output_usd_per_1k: 0.075}
 gpt_5_4:                        {unit: tokens, input_usd_per_1k: 0.0025, output_usd_per_1k: 0.0100}
 gpt_5_5:                        {unit: tokens, input_usd_per_1k: 0.0025, output_usd_per_1k: 0.0100}
+dots_mocr:                      {unit: page,   usd: 0.0}
