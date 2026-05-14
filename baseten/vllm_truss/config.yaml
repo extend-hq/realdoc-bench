@@ -13,12 +13,9 @@ resources:
   accelerator: "{{ accelerator }}"
   use_gpu: true
 
-# vLLM pulls weights from HF at boot; cache them in the image layer so cold
-# starts are fast and reproducible.
-model_cache:
-  - repo_id: "{{ hf_model }}"
-    use_volume: true
-    volume_folder: "{{ volume_folder }}"
+# `vllm serve` pulls the weights from HF at container boot. For faster cold
+# starts you can add a `model_cache:` block with a pinned `revision:` (commit
+# SHA) — see the Truss model-cache docs — but plain HF download always works.
 
 docker_server:
   start_command: >-
