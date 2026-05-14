@@ -85,6 +85,11 @@ def main() -> int:
     parser.add_argument("--hf-model", help="HF repo id (overrides / replaces --preset).")
     parser.add_argument("--name", help="Truss/Baseten model name. Defaults to a slug of the HF id.")
     parser.add_argument("--accelerator", default="H100", help="Baseten GPU (A10G, A100, H100, H200). Default H100.")
+    parser.add_argument(
+        "--base-image",
+        default="vllm/vllm-openai:latest",
+        help="Docker base image — must ship the `vllm` CLI. Default vllm/vllm-openai:latest.",
+    )
     parser.add_argument("--max-model-len", type=int, default=16384)
     parser.add_argument("--gpu-mem-util", type=float, default=0.90)
     parser.add_argument("--extra-vllm-args", default="", help="Extra args appended to `vllm serve`.")
@@ -109,6 +114,7 @@ def main() -> int:
     values = {
         "model_name": name,
         "hf_model": hf_model,
+        "base_image": args.base_image,
         "accelerator": args.accelerator,
         "max_model_len": args.max_model_len,
         "gpu_mem_util": args.gpu_mem_util,
