@@ -149,20 +149,38 @@ class ExtendPerformanceV1(_ExtendParserBase):
     }
 
 
+_PERFORMANCE_V2_CONFIG_EXTRA = {
+    "chunkingStrategy": {"type": "page"},
+    "blockOptions": {
+        "figures": {"enabled": True, "figureImageClippingEnabled": True},
+        "tables": {"enabled": True, "targetFormat": "markdown"},
+        "text": {"enabled": True, "styleFormattingEnabled": False},
+        "formulas": {"enabled": True},
+    },
+    "advancedOptions": {"pageRotationEnabled": True},
+}
+
+
+@register_parser("extend_performance_v2_0_0", version="2.0.0")
+class ExtendPerformanceV2GA(_ExtendParserBase):
+    """Performance v2.0.0 — GA release of the new pipeline.
+
+    Same config as the beta; the only difference is ``engine_version`` (no
+    ``-beta`` suffix), which routes to the GA build at the Extend API.
+    """
+
+    engine = "parse_performance"
+    engine_version = "2.0.0"
+    config_extra = _PERFORMANCE_V2_CONFIG_EXTRA
+
+
 @register_parser("extend_performance_v2_0_0_beta", version="2.0.0-beta")
-class ExtendPerformanceV2(_ExtendParserBase):
+class ExtendPerformanceV2Beta(_ExtendParserBase):
+    """Performance v2.0.0-beta — pre-GA build of the new pipeline."""
+
     engine = "parse_performance"
     engine_version = "2.0.0-beta"
-    config_extra = {
-        "chunkingStrategy": {"type": "page"},
-        "blockOptions": {
-            "figures": {"enabled": True, "figureImageClippingEnabled": True},
-            "tables": {"enabled": True, "targetFormat": "markdown"},
-            "text": {"enabled": True, "styleFormattingEnabled": False},
-            "formulas": {"enabled": True},
-        },
-        "advancedOptions": {"pageRotationEnabled": True},
-    }
+    config_extra = _PERFORMANCE_V2_CONFIG_EXTRA
 
 
 @register_parser("extend_light_v1_0_0", version="1.0.0")
