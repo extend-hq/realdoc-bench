@@ -21,3 +21,13 @@ try:
     from realdoc_bench.extraction.parsers import cloud_vlm  # noqa: F401
 except ImportError:
     pass
+
+try:
+    from realdoc_bench.extraction.parsers import reducto  # noqa: F401
+except ImportError:
+    pass
+
+try:
+    from realdoc_bench.extraction.parsers import llamaparse  # noqa: F401
+except ImportError:
+    pass
