@@ -1,62 +1,90 @@
 # Baseten deployer
 
-Host realdoc-bench's OCR / layout models on Baseten GPUs as **OpenAI-compatible
-vLLM endpoints**, so the existing realdoc-bench adapters can hit them with no
-code changes — just point the `*_BASE_URL` env vars at the Baseten URL.
+Host realdoc-bench's self-hosted OCR / layout models (dots.mocr, GLM-OCR,
+PaddleOCR-VL) on a Baseten **H200** via ``truss train``, and drive them from
+the laptop over an SSH tunnel. realdoc-bench's existing OpenAI-SDK adapters
+hit ``http://localhost:8000/v1`` unchanged — just `export <MODEL>_BASE_URL`.
 
-## Why
+## Why ``truss train`` and not ``truss push``
 
-The self-hosted models (dots.mocr, GLM-OCR, PaddleOCR-VL) need a GPU. `awsl4`
-(one L4, 23 GiB) can hold one at a time and the SSH tunnel flaps. Baseten gives
-a stable H100/H200 endpoint per model so the layout + extraction benchmarks can
-run several in parallel without babysitting a tunnel.
+This repo tried ``truss push`` (model deployments) first. Build + boot worked,
+vLLM came up healthy in the container, but **Baseten's gateway** kept
+returning `Model is unhealthy, it is not ready to make predictions` — the
+gateway↔container readiness handshake disagrees with the stock
+``vllm/vllm-openai`` image for OCR models, and predict requests never reach
+the container.
 
-## How it works
+``truss train`` is the right primitive here:
 
-`deploy.py` renders [`vllm_truss/config.yaml`](vllm_truss/config.yaml) — a
-Truss `docker_server` config that just runs `vllm serve <model>` — for the
-requested HF model + GPU, then `truss push`es it. Baseten serves the result at
-an OpenAI-compatible URL (`…/sync/v1/chat/completions`). realdoc-bench's
-adapters already build an `openai.OpenAI(base_url=…, api_key=…)` client, so they
-work against Baseten unchanged.
+| Concern | ``truss push`` | ``truss train`` (this) |
+|---|---|---|
+| GPU | H100/H200 deployment replica | H100/H200 **job** |
+| Path to vLLM | Baseten gateway → predict_endpoint | SSH tunnel → vLLM directly |
+| Readiness gate | Baseten's handshake (the problem) | Our own `serve_vllm.sh` health-loop |
+| Idle cost | Replica scale-to-zero | End the job (``truss train stop``) |
+| Public URL | Yes (when healthy) | No — laptop-only via SSH-forward |
+
+A training job is essentially a managed remote GPU box. We use it the same
+way we use ``awsl4`` — vLLM listens on :8000, the laptop forwards :8000
+through SSH, realdoc-bench points at ``http://localhost:8000/v1``. Just on
+real H200 instead of an L4 (23 GiB → 141 GiB).
+
+## What it does
+
+`deploy.py` renders nothing — it just shells out to
+``truss train push baseten/train_config.py`` with the right `BASETEN_*` env
+vars + ``--entrypoint "bash baseten/serve_vllm.sh"`` and
+``--interactive on_startup``. Baseten allocates the GPU, runs
+``serve_vllm.sh`` (which `vllm serve`s your model on :8000, waits for
+`/health`, and `sleep`s for the requested window). ``truss train isession``
+then returns SSH creds; you forward the port and you're done.
 
 ## Prereqs
 
 - `truss` CLI on PATH — `pipx install truss` (or mise; this repo's box has 0.14.1).
 - `BASETEN_API_KEY` exported, or `truss login` already done.
-- Gated HF repos: add an `hf_access_token` secret in the Baseten workspace and
-  wire it per the comment in `vllm_truss/config.yaml`. dots.mocr / GLM-OCR /
-  PaddleOCR-VL are public — no token needed.
+- Gated HF repos: an `hf_access_token` secret in the Baseten workspace —
+  `train_config.py` wires it into the container's `HF_TOKEN`. dots.mocr /
+  GLM-OCR / PaddleOCR-VL are public — no token needed.
 
 ## Usage
 
 ```bash
-# Curated presets (dots_mocr, glm_ocr, paddle_ocr_vl)
-python baseten/deploy.py --preset dots_mocr --accelerator H100
-python baseten/deploy.py --preset glm_ocr  --accelerator H200   # fp8 weights+KV
+# Curated presets (dots_mocr, glm_ocr, paddle_ocr_vl) on an H200 for 4 hours
+python baseten/deploy.py --preset dots_mocr
+python baseten/deploy.py --preset glm_ocr --hours 2
+python baseten/deploy.py --preset paddle_ocr_vl --accelerator H100
 
 # Arbitrary HF model
-python baseten/deploy.py --hf-model rednote-hilab/dots.mocr --name dots-mocr \
-    --accelerator H100 --max-model-len 16384
+python baseten/deploy.py --hf-model rednote-hilab/dots.mocr \
+    --accelerator H200 --max-model-len 16384 --hours 6
 
-# Inspect the rendered Truss without pushing
-python baseten/deploy.py --preset dots_mocr --dry-run
-
-# Production deploy (truss push --publish)
-python baseten/deploy.py --preset dots_mocr --publish
+# Stream logs while pushing (omit and use `truss train logs --job-id ...` later)
+python baseten/deploy.py --preset dots_mocr --tail
 ```
 
-After `truss push` finishes, Baseten prints the model URL. Wire it up:
+Once `deploy.py` returns and the job logs say `Ready for SSH`, follow the
+printed instructions:
 
 ```bash
-export DOTS_OCR_BASE_URL="https://model-XXXX.api.baseten.co/environments/production/sync/v1"
-export DOTS_OCR_BASE_URL_KEY="$BASETEN_API_KEY"
+truss train isession --job-id <JOB_ID>          # prints SSH creds + host
+ssh -L 8000:localhost:8000 <baseten-ssh-host>   # tunnel vLLM to laptop
+
+# Then in another shell:
+export DOTS_OCR_BASE_URL=http://localhost:8000/v1
+export DOTS_OCR_BASE_URL_KEY=EMPTY              # vLLM ignores the key
 
 # Layout benchmark
 realdoc-bench layout eval -p dots_ocr --run-id dots_baseten
 
 # Extraction benchmark (dots.mocr as a parse provider)
 realdoc-bench extract run --dataset v0 -p dots_mocr -a claude_sonnet_4_6
+```
+
+When the run is done, stop the job:
+
+```bash
+truss train stop --job-id <JOB_ID>
 ```
 
 ## Adapter ↔ env-var map
@@ -68,37 +96,30 @@ realdoc-bench extract run --dataset v0 -p dots_mocr -a claude_sonnet_4_6
 | PaddleOCR-VL | `paddle_ocr_vl` | — | `PADDLE_OCR_VL_BASE_URL` (+ `_KEY`) |
 
 The `_KEY` suffix env var is read by realdoc-bench's `OpenAIVisionParserBase` /
-processor clients and passed as the OpenAI `api_key` — set it to your
-`BASETEN_API_KEY`.
-
-## Known issue: gateway health probe
-
-`truss push` → image build → vLLM boot → deployment `ACTIVE` all work. But with
-the `vllm/vllm-openai` base image + `docker_server` config, Baseten's **gateway**
-can report `Model is unhealthy, it is not ready to make predictions` (HTTP 500)
-even though the container's vLLM is up (`Application startup complete`,
-`/metrics`→200 in the replica logs, and predict requests never reach the
-container). The gateway↔container readiness handshake isn't passing.
-
-Things to try (not yet resolved here):
-- Confirm what Baseten's `docker_server` probes for readiness — it may POST to
-  `predict_endpoint` rather than GET `readiness_endpoint`. vLLM 400s on a
-  malformed body, which the gateway could read as unhealthy.
-- Point `readiness_endpoint` / `liveness_endpoint` at a route that 200s on a
-  bare GET (`/health` should, `/ping` in some vLLM builds).
-- Add a startup grace period / bump probe thresholds.
-- Or wrap vLLM in a tiny FastAPI shim that exposes an unambiguous `/health`.
-
-Until that's nailed down, **awsl4 + the SSH tunnel** is the working path for
-self-hosted models (see `realdoc-bench`'s `*_BASE_URL` env vars).
+processor clients and passed as the OpenAI `api_key`. For vLLM through the
+tunnel, set it to anything non-empty (vLLM doesn't auth) — `EMPTY` is the
+convention.
 
 ## Notes
 
-- `predict_concurrency` (default 32) lets one replica batch many in-flight
-  requests — vLLM handles the batching. Bump it for throughput, or add replicas
-  in the Baseten UI / config.
-- PaddleOCR-VL: the preset assumes the model is vLLM-servable (true for recent
-  PaddleOCR-VL releases). If a given release isn't, fall back to the FastAPI
-  wrapper in `~/paddle_ocr_vl_server.py` on a raw GPU box.
-- Cost: an H100 replica is ~$0.06–0.10/min on Baseten; scale-to-zero keeps idle
-  cost ~0. Tear down with `truss` or the Baseten UI when a benchmark finishes.
+- **`predict_concurrency`** is irrelevant on this path — there's no gateway.
+  vLLM does continuous batching internally, so a single replica handles
+  many in-flight requests directly.
+- **Cost**: H200 jobs are ~$0.10–0.15/min on Baseten. The 4-hour default
+  means worst-case ~$36/job; for a benchmark that's usually 30–90 min you'll
+  spend $5–$20 and tear down with `truss train stop`.
+- **HF cache** is mounted at `/root/.cache` via `CacheConfig` so re-runs of
+  the same model on the same project skip the HF download.
+- **The L4 fallback** (`ssh awsl4`) still works — same SSH-tunnel pattern,
+  just one model at a time and limited to ~23 GiB.
+
+## File layout
+
+```
+baseten/
+├── deploy.py          # CLI: shells out to `truss train push`
+├── train_config.py    # truss_train.TrainingProject + TrainingJob
+├── serve_vllm.sh      # container entrypoint — vllm serve + health-wait + sleep
+├── presets.py         # HF-model presets (dots_mocr, glm_ocr, paddle_ocr_vl)
+└── vllm_truss/        # (deprecated) truss-push template — kept for reference
+```
