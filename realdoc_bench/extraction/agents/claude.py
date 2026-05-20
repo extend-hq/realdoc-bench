@@ -37,7 +37,12 @@ def _render_user(markdown: str, schema: dict[str, Any]) -> str:
 @register_agent("claude_sonnet_4_6", version="1.0.0")
 class ClaudeExtractor(ExtractionAgent):
     model = "claude-sonnet-4-6"
-    max_tokens = 4096
+    # 16k output is enough for the deepest schemas in our v0 dataset
+    # (med_protocol_001 needs ~8k+ tokens for the full nested object;
+    # 4096 was the previous default and caused schema_violations on long
+    # protocols). 32k tripped the Anthropic SDK's >10-min threshold which
+    # demands streaming; 16k stays under that and still ~4× the previous cap.
+    max_tokens = 16000
 
     def __init__(self) -> None:
         self._client: Any | None = None

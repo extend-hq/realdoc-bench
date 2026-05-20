@@ -1,9 +1,16 @@
 """Reducto parse adapter — uploads a PDF, gets markdown back.
 
-Reducto's parse API returns a ``result.chunks[].blocks[]`` graph (each block
-has a ``content`` field that's already markdown-ish). We concatenate block
-contents in reading order. Page boundaries are inferred from chunk-level
-page-range metadata when available.
+Reducto's parse API returns either:
+
+  - **inline result** for small docs: ``result.chunks[].blocks[]``, where
+    each block has a ``content`` field that's already markdown-ish, OR
+  - **URL result** for large docs (typically > a few pages): the
+    ``ParseResponse`` carries ``result={type: "url", url: "..."}`` and
+    the actual ``{chunks: [...]}`` JSON is stored at the (pre-signed S3)
+    URL. The adapter fetches the URL and parses the same shape.
+
+Without the URL branch, large-doc parses silently return 0 chunks. We
+walk both shapes uniformly via attribute/dict accessors.
 
 Auth: ``REDUCTO_API_KEY`` env var. Pricing: ``reducto`` in catalog.yaml
 (per-page rate). Page count comes from the response's chunk page-ranges.
@@ -11,8 +18,10 @@ Auth: ``REDUCTO_API_KEY`` env var. Pricing: ``reducto`` in catalog.yaml
 
 from __future__ import annotations
 
+import json
 import os
 import time
+import urllib.request
 from pathlib import Path
 from typing import Any
 
@@ -32,10 +41,17 @@ from realdoc_bench.shared.pricing.meter import parse_cost
 _HEADING_TYPES = {"Title", "Header", "Section Header"}
 
 
+def _get(obj: Any, key: str, default: Any = None) -> Any:
+    """Accessor that works on both Pydantic models and plain dicts."""
+    if isinstance(obj, dict):
+        return obj.get(key, default)
+    return getattr(obj, key, default)
+
+
 def _block_to_md(b: Any) -> str:
-    btype = getattr(b, "type", None)
+    btype = _get(b, "type")
     btype_str = btype.value if hasattr(btype, "value") else str(btype or "")
-    content = (getattr(b, "content", "") or "").rstrip()
+    content = (_get(b, "content", "") or "").rstrip()
     if not content:
         return ""
     if btype_str == "Title":
@@ -50,20 +66,33 @@ def _chunks_to_markdown(chunks: list[Any]) -> tuple[str, int]:
     parts: list[str] = []
     max_page = 0
     for chunk in chunks or []:
-        # Page range may live on the chunk or on individual block bboxes.
-        pr = getattr(chunk, "page_range", None) or getattr(chunk, "pageRange", None)
+        pr = _get(chunk, "page_range") or _get(chunk, "pageRange")
         if pr is not None:
-            end = getattr(pr, "end", None) or getattr(pr, "stop", None)
+            end = _get(pr, "end") or _get(pr, "stop")
             if isinstance(end, int):
                 max_page = max(max_page, end)
-        for b in getattr(chunk, "blocks", None) or []:
+        for b in _get(chunk, "blocks", None) or []:
             md = _block_to_md(b)
             if md:
                 parts.append(md)
-            bbox = getattr(b, "bbox", None)
-            if bbox is not None and isinstance(getattr(bbox, "page", None), int):
-                max_page = max(max_page, bbox.page)
+            bbox = _get(b, "bbox")
+            if bbox is not None:
+                pn = _get(bbox, "page")
+                if isinstance(pn, int):
+                    max_page = max(max_page, pn)
     return "\n\n".join(parts), max_page
+
+
+def _fetch_url_result(url: str, timeout: float = 60.0) -> dict[str, Any]:
+    """Fetch the Reducto URL-result and parse it as JSON.
+
+    Reducto stores the full result on S3 for large docs (> ~tens of pages)
+    and returns a pre-signed URL; the body is the same ``{chunks: [...]}``
+    JSON we'd otherwise get inline.
+    """
+    with urllib.request.urlopen(url, timeout=timeout) as r:
+        body = r.read()
+    return json.loads(body)
 
 
 @register_parser("reducto", version="1.0.0")
@@ -86,7 +115,9 @@ class ReductoParser(ParseProvider):
         return self._client
 
     def config_hash(self) -> str:
-        return sha256_text(f"{self.name}|{self.version}|chunk_mode={self.chunk_mode}")[:7]
+        return sha256_text(
+            f"{self.name}|{self.version}|chunk_mode={self.chunk_mode}|sig=1|chart=1"
+        )[:7]
 
     def parse(self, pdf_path: Path, *, cache_dir: Path | None = None) -> ParseResult:
         del cache_dir
@@ -94,17 +125,39 @@ class ReductoParser(ParseProvider):
         t0 = time.perf_counter()
 
         upload = client.upload(file=pdf_path)
+        # NOTE: ``formatting.include = ["signatures"]`` tells Reducto to surface
+        # signature blocks in its output (parallel to Extend's signatureDetection
+        # and Textract's SIGNATURES feature). Without it Reducto emits an empty
+        # ``<signature>`` placeholder. Bumped config_hash to invalidate caches.
+        # ``enhance.agentic`` with a figure-scope ``advanced_chart_agent``
+        # turns on Reducto's chart-data extraction — the counterpart to
+        # Extend's advancedChartExtraction and LlamaParse's agentic chart
+        # parsing. Without it Reducto only describes figures, not their data.
         resp = client.parse.run(
             input=upload.file_id,
             retrieval={"chunking": {"chunk_mode": self.chunk_mode}},
             settings={"extraction_mode": "ocr"},
+            formatting={"include": ["signatures"]},
+            enhance={"agentic": [{"scope": "figure", "advanced_chart_agent": True}]},
         )
         latency = time.perf_counter() - t0
 
-        chunks = []
-        result = getattr(resp, "result", None)
+        # Two response shapes:
+        #   small docs → resp.result.chunks inline
+        #   large docs → resp.result = {type: "url", url: "..."} pointing at
+        #                an S3 JSON blob with the actual chunks. Fetch it.
+        result = _get(resp, "result")
+        chunks: list[Any] = []
         if result is not None:
-            chunks = getattr(result, "chunks", None) or []
+            rtype = _get(result, "type")
+            if rtype == "url":
+                url = _get(result, "url")
+                if url:
+                    fetched = _fetch_url_result(str(url))
+                    chunks = fetched.get("chunks") or []
+                    latency = time.perf_counter() - t0  # include URL fetch
+            else:
+                chunks = _get(result, "chunks") or []
 
         markdown, pages = _chunks_to_markdown(chunks)
         pages = pages or None

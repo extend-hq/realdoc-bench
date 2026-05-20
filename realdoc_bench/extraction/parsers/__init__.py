@@ -31,3 +31,13 @@ try:
     from realdoc_bench.extraction.parsers import llamaparse  # noqa: F401
 except ImportError:
     pass
+
+try:
+    from realdoc_bench.extraction.parsers import azure_di  # noqa: F401
+except ImportError:
+    pass
+
+try:
+    from realdoc_bench.extraction.parsers import aws_textract  # noqa: F401
+except ImportError:
+    pass

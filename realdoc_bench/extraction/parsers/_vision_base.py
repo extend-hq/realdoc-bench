@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import base64
 import os
+import re
 import time
 from abc import abstractmethod
 from pathlib import Path
@@ -29,6 +30,31 @@ DEFAULT_DPI = 150
 DEFAULT_TIMEOUT_SEC = 300.0
 MAX_RETRIES = 6
 RETRY_BACKOFF_SEC = 5.0
+
+# Claude (and occasionally Gemini) wraps single-page markdown output in
+# ```markdown ... ``` code fences despite the prompt saying "Output only the
+# Markdown for this page". The fences themselves leak into the agent's input,
+# confusing table/structure parsing. Strip them defensively.
+_FENCE_OPEN_RE = re.compile(r"^```(?:markdown|md)?\s*\n", re.IGNORECASE)
+_FENCE_CLOSE_RE = re.compile(r"\n```\s*$")
+
+
+def _strip_outer_code_fence(text: str) -> str:
+    """Strip a single outer ``` fence pair if the entire blob is wrapped in one.
+
+    Idempotent: text without an outer fence is returned unchanged. Inner fenced
+    blocks (e.g. real code samples inside the markdown) are preserved.
+    """
+    if not text:
+        return text
+    m_open = _FENCE_OPEN_RE.match(text)
+    if not m_open:
+        return text
+    m_close = _FENCE_CLOSE_RE.search(text)
+    if not m_close:
+        return text
+    inner = text[m_open.end() : m_close.start()].strip()
+    return inner if inner else text
 
 
 def _render_pdf_pages(pdf_path: Path, dpi: int) -> list[bytes]:
@@ -72,7 +98,7 @@ class VisionParserBase(ParseProvider):
     def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]: ...
 
     def _page_to_markdown(self, raw_text: str, page_no: int) -> str:
-        return raw_text.strip()
+        return _strip_outer_code_fence(raw_text.strip())
 
     def parse(self, pdf_path: Path, *, cache_dir: Path | None = None) -> ParseResult:
         del cache_dir

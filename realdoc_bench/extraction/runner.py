@@ -83,7 +83,14 @@ def _load_or_parse(
     source_sha = sha256_file(source_path)
     cache_path = _parse_cache_path(source_sha, parser.name, parser.config_hash())
     if not no_cache and cache_path.exists():
-        return ParseResult.model_validate_json(cache_path.read_text())
+        cached = ParseResult.model_validate_json(cache_path.read_text())
+        # Treat empty-markdown parses as cache misses. These come from
+        # transient upstream failures (e.g. Reducto's URL-result path
+        # returning a 0-byte result when the adapter didn't fetch it)
+        # rather than from genuine zero-content documents — re-parsing
+        # is the correct recovery.
+        if cached.markdown:
+            return cached
     result = parser.parse(source_path)
     cache_path.write_text(result.model_dump_json(indent=2))
     return result

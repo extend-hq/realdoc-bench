@@ -47,6 +47,13 @@ class LlamaParseParser(ParseProvider):
 
     tier: str = "agentic"
     version_str: str = "latest"
+    # Match Extend v2 advanced + Reducto signature flag — turn on the
+    # provider's strongest chart-parsing pipeline so each parser is configured
+    # for its best-effort chart extraction. ``agentic`` here pairs with the
+    # agentic tier; ``agentic_plus`` is heavier and more expensive.
+    # specialized_chart_parsing only applies to the agentic tiers — the
+    # cost_effective / fast tiers leave it None (see LlamaParseCostEffective).
+    chart_parsing: str | None = "agentic"
 
     def __init__(self) -> None:
         self._client: Any | None = None
@@ -63,7 +70,8 @@ class LlamaParseParser(ParseProvider):
 
     def config_hash(self) -> str:
         return sha256_text(
-            f"{self.name}|{self.version}|tier={self.tier}|version_str={self.version_str}"
+            f"{self.name}|{self.version}|tier={self.tier}"
+            f"|version_str={self.version_str}|chart={self.chart_parsing}"
         )[:7]
 
     def parse(self, pdf_path: Path, *, cache_dir: Path | None = None) -> ParseResult:
@@ -72,17 +80,22 @@ class LlamaParseParser(ParseProvider):
         t0 = time.perf_counter()
 
         file_obj = client.files.create(file=pdf_path, purpose="parse")
-        result = client.parsing.parse(
+        parse_kwargs: dict[str, Any] = dict(
             file_id=file_obj.id,
             tier=self.tier,
             version=self.version_str,
             output_options={
-                "markdown": {
-                    "tables": {"output_tables_as_markdown": True},
-                }
+                "markdown": {"tables": {"output_tables_as_markdown": True}},
             },
             expand=["markdown_full"],
         )
+        # specialized_chart_parsing only applies to the agentic tiers; the
+        # cost_effective / fast tiers leave it unset.
+        if self.chart_parsing:
+            parse_kwargs["processing_options"] = {
+                "specialized_chart_parsing": self.chart_parsing,
+            }
+        result = client.parsing.parse(**parse_kwargs)
         latency = time.perf_counter() - t0
 
         markdown = getattr(result, "markdown_full", "") or ""
@@ -98,3 +111,16 @@ class LlamaParseParser(ParseProvider):
             version=self.version,
             config_hash=self.config_hash(),
         )
+
+
+@register_parser("llamaparse_cost_effective", version="1.0.0")
+class LlamaParseCostEffective(LlamaParseParser):
+    """LlamaParse ``cost_effective`` tier — the balanced low-cost parsing
+    option, vs the default ``llamaparse`` which runs the ``agentic`` tier.
+
+    Recorded as a separate performance run. No specialized chart parsing —
+    that pipeline only runs on the agentic tiers.
+    """
+
+    tier = "cost_effective"
+    chart_parsing = None
