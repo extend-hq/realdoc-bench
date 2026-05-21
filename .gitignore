@@ -46,3 +46,6 @@ datasets/extraction/_personas/
 
 # benchmark-construction scripts — kept local, not shared publicly
 construction/
+
+# baseten deploy/training scaffolding — local only
+baseten/

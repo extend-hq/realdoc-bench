@@ -27,6 +27,32 @@ realdoc-bench extract run --dataset v0 --parser pymupdf --agent claude_sonnet_4_
 realdoc-bench extract report --run-id <id>
 ```
 
+## Benchmark pipeline
+
+The end-to-end parser benchmark — parse the sampled documents, run the
+answer-extraction agent over each parser's markdown, score with the 3-layer
+scorer (strict → fuzzy → LLM-judge), and build the HTML report:
+
+```bash
+python -m realdoc_bench.pipeline run --run-dir runs/v500
+```
+
+Stages can also be run on their own — each is cached, so re-runs skip work
+that is already done (pass `--force` to recompute):
+
+```bash
+python -m realdoc_bench.pipeline parse   --run-dir runs/v500
+python -m realdoc_bench.pipeline eval    --run-dir runs/v500
+python -m realdoc_bench.pipeline rescore --run-dir runs/v500 --profile lenient
+python -m realdoc_bench.pipeline report  --run-dir runs/v500
+```
+
+Restrict any command to a document domain or type with `--domain` / `--type`:
+
+```bash
+python -m realdoc_bench.pipeline run --run-dir runs/v500 --domain finance
+```
+
 ## Datasets
 
 Datasets are distributed via the [Hugging Face Hub](https://huggingface.co/extend-ai) under the `extend-ai` org. They are **private by default** during development; the `v1-public` extraction set and the public layout set are gated by a one-time legal review.
