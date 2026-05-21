@@ -14,7 +14,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 PILOT = REPO / "runs" / "pilot_50"
 
 
@@ -916,12 +916,12 @@ updateCounts();
     out_path.write_text(HEAD + body + script)
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--mode", choices=["pre", "post"], required=True)
     ap.add_argument("--run-dir", type=Path, default=REPO / "runs" / "pilot_50")
     ap.add_argument("--out", type=Path, default=None)
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     _set_run_dir(args.run_dir.resolve())
 
     pages, eval_data = load_data(args.mode)

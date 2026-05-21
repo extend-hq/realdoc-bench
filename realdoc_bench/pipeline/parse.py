@@ -19,7 +19,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 V12F = REPO / "datasets" / "extraction" / "v1.2_final"
@@ -104,7 +104,7 @@ def parse_one(parser, parser_name: str, pdf: Path, dest_path: str) -> dict:
         return meta
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", type=Path, default=REPO / "runs" / "pilot_50",
                     help="run output directory (sample.csv + parses/ under here)")
@@ -118,15 +118,23 @@ def main() -> int:
     ap.add_argument("--retry-errors", action="store_true",
                     help="Re-attempt page+parser combos that previously errored.")
     ap.add_argument("--limit", type=int, default=None)
-    args = ap.parse_args()
+    ap.add_argument("--domain", nargs="*", default=None,
+                    help="only docs whose sample.csv 'domain' is in this list")
+    ap.add_argument("--type", nargs="*", default=None,
+                    help="only docs whose sample.csv 'type' is in this list")
+    ap.add_argument("--force", action="store_true",
+                    help="re-parse even when a cached output already exists")
+    args = ap.parse_args(argv)
     _set_run_dir(args.run_dir.resolve())
 
     # Register parsers
     import realdoc_bench.extraction.parsers  # noqa
+    from realdoc_bench.pipeline.dataset import filter_rows
     from realdoc_bench.extraction.parsers import extend, aws_textract, azure_di  # noqa
     from realdoc_bench.extraction.parsers.base import registry as parser_registry
 
     rows = list(csv.DictReader(SAMPLE_CSV.open()))
+    rows = filter_rows(rows, args.domain, args.type)
     if args.limit:
         rows = rows[: args.limit]
     print(f"Sample: {len(rows)} pages × {len(args.parsers)} parsers = {len(rows) * len(args.parsers)} jobs")
@@ -135,7 +143,10 @@ def main() -> int:
     PARSES_ROOT.mkdir(parents=True, exist_ok=True)
 
     # Build skip set
-    if not args.retry_errors:
+    if args.force:
+        def is_done(parser_name, dest_path):
+            return False
+    elif not args.retry_errors:
         # Skip if .json exists AND it succeeded — leave errored entries to retry on
         # explicit --retry-errors
         def is_done(parser_name, dest_path):

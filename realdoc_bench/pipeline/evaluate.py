@@ -29,7 +29,7 @@ from pathlib import Path
 
 import httpx
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 PILOT = REPO / "runs" / "pilot_50"
 
 
@@ -425,16 +425,27 @@ def parser_md_path(parser_name: str, dest_path: str) -> Path:
     return PILOT / "parses" / parser_name / f"{stem}.md"
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", type=Path, default=REPO / "runs" / "pilot_50")
     ap.add_argument("--max-workers", type=int, default=8)
     ap.add_argument("--limit", type=int, default=None, help="limit Q count for smoke")
-    args = ap.parse_args()
+    ap.add_argument("--domain", nargs="*", default=None,
+                    help="only docs whose sample.csv 'domain' is in this list")
+    ap.add_argument("--type", nargs="*", default=None,
+                    help="only docs whose sample.csv 'type' is in this list")
+    ap.add_argument("--force", action="store_true",
+                    help="re-evaluate even when a cached answer file exists")
+    args = ap.parse_args(argv)
     _set_run_dir(args.run_dir.resolve())
 
     bank = json.loads((PILOT / "qa" / "bank_r1.json").read_text())
     sample = {r["dest_path"]: r for r in csv.DictReader((PILOT / "sample.csv").open())}
+    from realdoc_bench.pipeline.dataset import filter_rows
+    if args.domain or args.type:
+        kept = {r["dest_path"] for r in filter_rows(list(sample.values()),
+                                                    args.domain, args.type)}
+        sample = {k: v for k, v in sample.items() if k in kept}
     stem_to_dest = {Path(r["dest_path"]).stem: r["dest_path"] for r in sample.values()}
 
     items = bank["items"]
@@ -488,7 +499,7 @@ def main() -> int:
     def cache_key(dp, parser_name):
         return cache_dir / f"{Path(dp).stem}__{parser_name}.json"
 
-    todo = [j for j in jobs if not cache_key(j[0], j[1]).exists()]
+    todo = jobs if args.force else [j for j in jobs if not cache_key(j[0], j[1]).exists()]
     print(f"  cached {len(jobs) - len(todo)}, todo {len(todo)}")
 
     def do(job):

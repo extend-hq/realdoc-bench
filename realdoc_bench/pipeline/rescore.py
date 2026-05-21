@@ -25,7 +25,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 from realdoc_bench.extraction.scoring.compare import compare_text          # noqa: E402
 from realdoc_bench.extraction.scoring.llm_judge import llm_judge           # noqa: E402
@@ -163,7 +163,7 @@ def fuzzy_match(answer, gold, *, profile: ScoringProfile = DEFAULT_PROFILE) -> b
 # ──────────────────────────────────────────────────────────────────────────
 # Main
 # ──────────────────────────────────────────────────────────────────────────
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--run-dir", type=Path, default=REPO / "runs" / "pilot_50")
     ap.add_argument("--max-workers", type=int, default=8)
@@ -171,7 +171,7 @@ def main() -> int:
                     help="fuzzy-match strictness profile (scoring/profiles.py)")
     ap.add_argument("--no-llm", action="store_true",
                     help="skip the LLM judge layer (only strict + fuzzy)")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     _set_run_dir(args.run_dir.resolve())
     profile = PROFILES[args.profile]
     print(f"fuzzy profile: {args.profile} "
