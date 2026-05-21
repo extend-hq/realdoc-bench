@@ -38,9 +38,9 @@ STRICT_PROFILE = ScoringProfile(
     ignore_punctuation=False,
 )
 LENIENT_PROFILE = ScoringProfile(
-    fuzzy_threshold=80,
-    fuzzy_floor=50,
-    fuzzy_floor_score=0.5,
+    fuzzy_threshold=85,
+    fuzzy_floor=70,
+    fuzzy_floor_score=0.7,
     number_rel_tolerance=0.05,
     ignore_punctuation=True,
 )
