@@ -255,7 +255,7 @@ def _build_eval_user_text(units: list[dict], parser_md: str) -> str:
             lines.append(f"value format: {u['response_format']}")
         blocks.append("\n".join(lines))
     return (
-        f"Parsed document markdown:\n```\n{parser_md[:60000]}\n```\n\n"
+        f"Parsed document markdown:\n```\n{parser_md}\n```\n\n"
         f"Answer ALL {len(units)} extraction items below using ONLY that "
         f"markdown. Each item wants exactly one value.\n\n"
         + "\n\n".join(blocks)
