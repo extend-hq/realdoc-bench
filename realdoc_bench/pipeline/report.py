@@ -53,7 +53,6 @@ def load_data(mode: str):
         for dp in sample:
             stem = Path(dp).with_suffix("").as_posix()
             for pname in ("extend_performance_v1_0_0", "extend_performance_v2_0_0_advanced",
-                          "extend_performance_v2_0_0_agentic",
                           "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"):
                 md_path = PILOT / "parses" / pname / f"{stem}.md"
                 if md_path.exists():
@@ -67,7 +66,6 @@ def load_data(mode: str):
         page_mds = {}
         if mode == "post":
             for pname in ("extend_performance_v1_0_0", "extend_performance_v2_0_0_advanced",
-                          "extend_performance_v2_0_0_agentic",
                           "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"):
                 md = parser_md.get((dp, pname))
                 if md is not None:
@@ -334,7 +332,6 @@ def emit_html(pages, mode: str, out_path: Path):
   </label>
   <label id="f-scoring-wrap" style="display:none">Scoring
     <select id="f-scoring" onchange="renderAll()">
-      <option value="llm">LLM-judge (recommended)</option>
       <option value="fuzzy">fuzzy (value-level)</option>
       <option value="strict">strict (exact match)</option>
     </select>
@@ -483,14 +480,13 @@ function docStats(p) {
 
 function activeScoring() {
   const sel = document.getElementById("f-scoring");
-  return sel ? sel.value : "llm";
+  return sel ? sel.value : "fuzzy";
 }
 
 function correctSetKey() {
   const s = activeScoring();
   return s === "strict" ? "parsers_correct_strict"
-       : s === "fuzzy"  ? "parsers_correct_fuzzy"
-       : "parsers_correct_llm";
+       : "parsers_correct_fuzzy";
 }
 
 function getDifficulty(qid) {
@@ -583,15 +579,13 @@ function renderAll() {
     if (MODE === "post" && p.parser_mds && Object.keys(p.parser_mds).length) {
       const labels = {
         "extend_performance_v1_0_0": "Extend v1",
-        "extend_performance_v2_0_0_advanced": "Extend v2 (adv)",
-        "extend_performance_v2_0_0_agentic": "Extend v2 (agentic)",
+        "extend_performance_v2_0_0_advanced": "Extend v2",
         "aws_textract": "Textract",
         "azure_di": "Azure DI",
         "reducto": "Reducto",
-        "llamaparse": "LlamaParse", "llamaparse_cost_effective": "LlamaParse CE",
+        "llamaparse": "LlamaParse (Agentic)", "llamaparse_cost_effective": "LlamaParse",
       };
       const order = ["extend_performance_v1_0_0", "extend_performance_v2_0_0_advanced",
-                     "extend_performance_v2_0_0_agentic",
                      "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"];
       const cells = order.filter(pn => p.parser_mds[pn] !== undefined)
                         .map(pn => `<div class="md-cell"><div class="ph">${labels[pn]}</div>${escapeHtml(p.parser_mds[pn])}</div>`)
@@ -634,18 +628,17 @@ function renderIterationHistory() {
   if (!ITER_HISTORY || !ITER_HISTORY.length) { ih.style.display = "none"; return; }
   ih.style.display = "block";
   const parserOrder = ["extend_performance_v1_0_0", "extend_performance_v2_0_0_advanced",
-                       "extend_performance_v2_0_0_agentic", "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"];
+                       "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"];
   const labels = {
     "extend_performance_v1_0_0": "Extend v1",
-    "extend_performance_v2_0_0_advanced": "Extend v2 (adv)",
-        "extend_performance_v2_0_0_agentic": "Extend v2 (agentic)",
+    "extend_performance_v2_0_0_advanced": "Extend v2",
     "aws_textract": "Textract", "azure_di": "Azure DI",
-    "reducto": "Reducto", "llamaparse": "LlamaParse", "llamaparse_cost_effective": "LlamaParse CE",
+    "reducto": "Reducto", "llamaparse": "LlamaParse (Agentic)", "llamaparse_cost_effective": "LlamaParse",
   };
-  const metric = "sub_llm";   // sub-answer accuracy, LLM-judge
+  const metric = "sub_fuzzy";   // sub-answer accuracy, fuzzy match
   const pct = (s) => s && s.sub_t ? (s[metric] / s.sub_t * 100) : null;
   let html = `<h2>Question-hardening progression</h2>`;
-  html += `<div class="ih-note">Per-parser sub-answer accuracy (LLM-judge) after each `
+  html += `<div class="ih-note">Per-parser sub-answer accuracy (fuzzy) after each `
         + `hardening pass. Easy questions — ones ≥5/6 parsers nailed — were replaced `
         + `with harder ones generated from the page image.</div>`;
   html += `<table><tr><th>Parser</th>`
@@ -690,15 +683,14 @@ function renderScoreboard(visiblePages) {
   if (MODE !== "post") { sb.style.display = "none"; return; }
   const layer = activeScoring();
   const parserOrder = ["extend_performance_v1_0_0", "extend_performance_v2_0_0_advanced",
-                       "extend_performance_v2_0_0_agentic", "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"];
+                       "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"];
   const labels = {
     "extend_performance_v1_0_0": "Extend v1",
-    "extend_performance_v2_0_0_advanced": "Extend v2 (adv)",
-        "extend_performance_v2_0_0_agentic": "Extend v2 (agentic)",
+    "extend_performance_v2_0_0_advanced": "Extend v2",
     "aws_textract": "Textract",
     "azure_di": "Azure DI",
     "reducto": "Reducto",
-    "llamaparse": "LlamaParse", "llamaparse_cost_effective": "LlamaParse CE",
+    "llamaparse": "LlamaParse (Agentic)", "llamaparse_cost_effective": "LlamaParse",
   };
   const stat = {};
   for (const pn of parserOrder) stat[pn] = { subC: 0, subT: 0, qC: 0, qT: 0 };
@@ -765,19 +757,18 @@ function renderQCard(q, p) {
       const goldStruct = qev.gold_struct || {};
       const keys = qev.keys || Object.keys(goldStruct);
       const parserOrder = ["extend_performance_v1_0_0", "extend_performance_v2_0_0_advanced",
-                           "extend_performance_v2_0_0_agentic", "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"];
+                           "aws_textract", "azure_di", "reducto", "llamaparse", "llamaparse_cost_effective"];
       const labels = {
         "extend_performance_v1_0_0": "Extend v1",
-        "extend_performance_v2_0_0_advanced": "Extend v2 (adv)",
-        "extend_performance_v2_0_0_agentic": "Extend v2 (agentic)",
+        "extend_performance_v2_0_0_advanced": "Extend v2",
         "aws_textract": "Textract",
         "azure_di": "Azure DI",
         "reducto": "Reducto",
-        "llamaparse": "LlamaParse", "llamaparse_cost_effective": "LlamaParse CE",
+        "llamaparse": "LlamaParse (Agentic)", "llamaparse_cost_effective": "LlamaParse",
       };
       const present = parserOrder.filter(pn => (qev.parser_answers || {})[pn] !== undefined);
       const nParsers = present.length || 6;
-      const diff = qLevelSet.length;
+      const diff = qLevelSet.filter(pn => present.includes(pn)).length;
 
       evalHtml = `<div style="margin-top:6px">
         <span class="difficulty d-${diff}">${diff}/${nParsers} parsers fully correct
