@@ -100,6 +100,11 @@ class ReductoParser(ParseProvider):
     """Reducto parse API — PDF in, markdown out via the chunk/block graph."""
 
     chunk_mode: str = "page"
+    extraction_mode: str = "ocr"          # SDK allows only "ocr" | "hybrid"
+    # enhance.agentic — VLM-assisted extraction, one entry per scope. The base
+    # parser runs the figure agent only; the agentic variant adds table + text.
+    agentic: list = [{"scope": "figure", "advanced_chart_agent": True}]
+    intelligent_ordering: bool = False
 
     def __init__(self) -> None:
         self._client: Any | None = None
@@ -115,8 +120,11 @@ class ReductoParser(ParseProvider):
         return self._client
 
     def config_hash(self) -> str:
+        scopes = ",".join(sorted(a["scope"] for a in self.agentic))
         return sha256_text(
-            f"{self.name}|{self.version}|chunk_mode={self.chunk_mode}|sig=1|chart=1"
+            f"{self.name}|{self.version}|chunk_mode={self.chunk_mode}"
+            f"|mode={self.extraction_mode}|agentic={scopes}"
+            f"|order={self.intelligent_ordering}|sig=1"
         )[:7]
 
     def parse(self, pdf_path: Path, *, cache_dir: Path | None = None) -> ParseResult:
@@ -125,20 +133,13 @@ class ReductoParser(ParseProvider):
         t0 = time.perf_counter()
 
         upload = client.upload(file=pdf_path)
-        # NOTE: ``formatting.include = ["signatures"]`` tells Reducto to surface
-        # signature blocks in its output (parallel to Extend's signatureDetection
-        # and Textract's SIGNATURES feature). Without it Reducto emits an empty
-        # ``<signature>`` placeholder. Bumped config_hash to invalidate caches.
-        # ``enhance.agentic`` with a figure-scope ``advanced_chart_agent``
-        # turns on Reducto's chart-data extraction — the counterpart to
-        # Extend's advancedChartExtraction and LlamaParse's agentic chart
-        # parsing. Without it Reducto only describes figures, not their data.
         resp = client.parse.run(
             input=upload.file_id,
             retrieval={"chunking": {"chunk_mode": self.chunk_mode}},
-            settings={"extraction_mode": "ocr"},
+            settings={"extraction_mode": self.extraction_mode},
             formatting={"include": ["signatures"]},
-            enhance={"agentic": [{"scope": "figure", "advanced_chart_agent": True}]},
+            enhance={"agentic": self.agentic,
+                     "intelligent_ordering": self.intelligent_ordering},
         )
         latency = time.perf_counter() - t0
 
@@ -172,3 +173,16 @@ class ReductoParser(ParseProvider):
             version=self.version,
             config_hash=self.config_hash(),
         )
+
+
+@register_parser("reducto_agentic", version="1.0.0")
+class ReductoAgenticParser(ReductoParser):
+    """Reducto with agentic VLM enhancement on every scope — text (form
+    key-value regions), table and figure. Config matches the reference clip
+    exactly; the base parser runs the figure agent only."""
+
+    agentic = [
+        {"scope": "text"},
+        {"scope": "table"},
+        {"scope": "figure", "advanced_chart_agent": True},
+    ]

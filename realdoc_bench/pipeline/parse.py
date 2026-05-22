@@ -124,6 +124,8 @@ def main(argv: list[str] | None = None) -> int:
                     help="only docs whose sample.csv 'type' is in this list")
     ap.add_argument("--force", action="store_true",
                     help="re-parse even when a cached output already exists")
+    ap.add_argument("--sources", type=Path, default=V12F,
+                    help="directory the sample.csv dest_path values are relative to")
     args = ap.parse_args(argv)
     _set_run_dir(args.run_dir.resolve())
 
@@ -172,7 +174,7 @@ def main(argv: list[str] | None = None) -> int:
     jobs = []  # (parser_name, parser_instance, pdf, dest_path)
     for r in rows:
         dest_path = r["dest_path"]
-        pdf = V12F / dest_path
+        pdf = args.sources / dest_path
         if not pdf.exists():
             print(f"  ! missing pdf {pdf}", file=sys.stderr)
             continue
