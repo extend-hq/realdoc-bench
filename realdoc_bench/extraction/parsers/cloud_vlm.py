@@ -21,11 +21,23 @@ from realdoc_bench.extraction.parsers.base import register_parser
 
 _MARKDOWN_PROMPT = (
     "Convert this document page to clean, faithful Markdown.\n"
-    "- Preserve reading order and heading hierarchy.\n"
-    "- Render tables as HTML <table> markup; render formulas as LaTeX.\n"
-    "- Transcribe text exactly as shown — do not translate, summarize, or invent.\n"
-    "- Render checkboxes as ☒ (checked) or ☐ (unchecked).\n"
-    "Output only the Markdown for this page, no commentary."
+    "- Preserve reading order and heading hierarchy (use `#`, `##`, `###`).\n"
+    "- Render tables as GitHub-flavored markdown tables. If a cell spans "
+    "multiple rows or columns, repeat its value in each cell so the table "
+    "stays rectangular.\n"
+    "- For figures and charts: if the figure shows numeric data (bar / line / "
+    "pie / scatter / etc.), emit the underlying data as a markdown table. "
+    "Otherwise write a one-line italic caption: `*Figure: <brief description>*`.\n"
+    "- Render form fields as `**<label>:** <value>` on their own line. If the "
+    "value is empty, emit `**<label>:** <blank>`.\n"
+    "- Render checkboxes inline as ☒ (checked) or ☐ (unchecked), paired with "
+    "their adjacent label on the same line.\n"
+    "- Skip running page headers, page footers, and page numbers — they are "
+    "page furniture, not document content.\n"
+    "- Transcribe text exactly as shown — do not translate, summarize, "
+    "paraphrase, or invent content.\n"
+    "Output only the Markdown for this page, no commentary, no surrounding "
+    "code fences."
 )
 
 
@@ -33,6 +45,13 @@ _MARKDOWN_PROMPT = (
 class Gemini3FlashParser(GeminiVisionParserBase):
     model = "gemini-3-flash-preview"
     pricing_key = "gemini_3_flash"
+    prompt = _MARKDOWN_PROMPT
+
+
+@register_parser("gemini_3_5_flash", version="gemini-3.5-flash")
+class Gemini35FlashParser(GeminiVisionParserBase):
+    model = "gemini-3.5-flash"
+    pricing_key = "gemini_3_5_flash"
     prompt = _MARKDOWN_PROMPT
 
 

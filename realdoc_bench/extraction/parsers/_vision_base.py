@@ -74,6 +74,35 @@ def _render_pdf_pages(pdf_path: Path, dpi: int) -> list[bytes]:
     return out
 
 
+_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp"}
+
+
+def _load_pages(input_path: Path, dpi: int) -> list[bytes]:
+    """Load an input file as a list of per-page PNG-encoded bytes.
+
+    PDFs are rasterized at ``dpi``. Single-image inputs (PNG/JPEG/WEBP) are
+    read as one "page" — JPEG/WEBP are re-encoded to PNG so downstream calls
+    that hardcode ``image/png`` mime type stay correct.
+    """
+    suffix = input_path.suffix.lower()
+    if suffix not in _IMAGE_EXTS:
+        return _render_pdf_pages(input_path, dpi)
+    data = input_path.read_bytes()
+    if suffix == ".png":
+        return [data]
+    # Re-encode JPEG/WEBP to PNG so the existing image/png mime contract holds.
+    import io
+
+    from PIL import Image
+
+    img = Image.open(io.BytesIO(data))
+    if img.mode not in ("RGB", "RGBA"):
+        img = img.convert("RGB")
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return [buf.getvalue()]
+
+
 class VisionParserBase(ParseProvider):
     """Renders a PDF to page images and concatenates per-page markdown.
 
@@ -106,7 +135,7 @@ class VisionParserBase(ParseProvider):
         import os as _os
 
         t0 = time.perf_counter()
-        pages = _render_pdf_pages(pdf_path, self.dpi)
+        pages = _load_pages(pdf_path, self.dpi)
         concurrency = max(1, int(_os.environ.get("RDB_PAGE_CONCURRENCY", self.page_concurrency)))
 
         results: list[tuple[str, int, int]] = [("", 0, 0)] * len(pages)
