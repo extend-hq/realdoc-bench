@@ -2,41 +2,45 @@
 
 Two top-level command groups:
 
-- ``layout`` — list processors, run a layout benchmark, render the snapshot report.
-- ``extract`` — list parsers/agents, run an extraction grid, score it, render a report.
+- ``layout``    — list processors, run a layout benchmark, render its report.
+- ``evaluate``  — download a dataset, parse documents, score against the QA
+                   bank, and build the dashboard.
 """
 
 from __future__ import annotations
 
 import json
-from collections import defaultdict
 from pathlib import Path
 
 import typer
 from rich.console import Console
 from rich.table import Table
 
-# Side-effect imports register all decorated parsers/agents/processors.
-from realdoc_bench.extraction import agents as _agents  # noqa: F401
+# Side-effect imports register all decorated parsers/processors.
 from realdoc_bench.extraction import parsers as _parsers  # noqa: F401
-from realdoc_bench.extraction.agents.base import registry as agent_registry
-from realdoc_bench.extraction.manifest import Manifest
 from realdoc_bench.extraction.parsers.base import registry as parser_registry
-from realdoc_bench.extraction.runner import aggregate as ext_aggregate
-from realdoc_bench.extraction.runner import run as ext_run
+from realdoc_bench.evaluate import parse as ev_parse
+from realdoc_bench.evaluate import report as ev_report
+from realdoc_bench.evaluate import score as ev_score
+from realdoc_bench.evaluate.download import download_dataset
+from realdoc_bench.evaluate.dotenv import load_dotenv
+from realdoc_bench.evaluate.runs import RunLayout
 from realdoc_bench.layout import processors as _processors  # noqa: F401
 from realdoc_bench.layout.processors.base import registry as proc_registry
+from realdoc_bench.layout.reports.snapshot import write_full as write_layout_report
 from realdoc_bench.layout.runner import aggregate_summary as layout_aggregate
 from realdoc_bench.layout.runner import run as layout_run
-from realdoc_bench.layout.reports.snapshot import write_full as write_layout_report
 
 console = Console()
 
-app = typer.Typer(no_args_is_help=True, help="realdoc-bench — layout + extraction benchmarks")
+app = typer.Typer(no_args_is_help=True, help="realdoc-bench — layout + QA-extraction benchmarks")
 layout_app = typer.Typer(no_args_is_help=True, help="Layout benchmark.")
-extract_app = typer.Typer(no_args_is_help=True, help="Extraction-quality benchmark.")
+evaluate_app = typer.Typer(
+    no_args_is_help=True,
+    help="QA-extraction benchmark: download → parse → score → report.",
+)
 app.add_typer(layout_app, name="layout")
-app.add_typer(extract_app, name="extract")
+app.add_typer(evaluate_app, name="evaluate")
 
 
 # ── Layout ──────────────────────────────────────────────────────────────────
@@ -54,7 +58,7 @@ def layout_list() -> None:
 
 @layout_app.command("eval")
 def layout_eval(
-    processor: list[str] = typer.Option(..., "--processor", "-p", help="Processor names. Repeat for several."),
+    processor: list[str] = typer.Option(..., "--processor", "-p"),
     dataset: str = typer.Option("realdoc-layout", "--dataset"),
     limit: int | None = typer.Option(None, "--limit"),
     split: list[str] | None = typer.Option(None, "--split"),
@@ -62,23 +66,20 @@ def layout_eval(
     run_id: str | None = typer.Option(None, "--run-id"),
     run_dir: Path = typer.Option(Path("runs"), "--run-dir"),
 ) -> None:
-    del dataset  # only realdoc-layout for now
+    del dataset
     summary = layout_run(
-        processors=processor,
-        limit=limit,
-        splits=split,
-        domains=domain,
-        run_id=run_id,
-        run_dir=run_dir,
+        processors=processor, limit=limit, splits=split, domains=domain,
+        run_id=run_id, run_dir=run_dir,
     )
     console.print(f"run_id = [bold]{summary.run_id}[/bold]")
     aggregates = layout_aggregate(summary)
     table = Table(title="Layout results")
-    table.add_column("processor"); table.add_column("F1"); table.add_column("$/page"); table.add_column("latency_s/page")
-    for proc, agg in sorted(aggregates.items(), key=lambda kv: kv[1]["strict"]["f1"], reverse=True):
+    table.add_column("processor"); table.add_column("F1")
+    table.add_column("$/page"); table.add_column("latency_s/page")
+    for proc, agg in sorted(aggregates.items(),
+                            key=lambda kv: kv[1]["strict"]["f1"], reverse=True):
         table.add_row(
-            proc,
-            f"{agg['strict']['f1']:.3f}",
+            proc, f"{agg['strict']['f1']:.3f}",
             f"{agg['mean_cost_usd_per_page']:.4f}" if agg["mean_cost_usd_per_page"] is not None else "—",
             f"{agg['mean_latency_sec']:.2f}" if agg["mean_latency_sec"] is not None else "—",
         )
@@ -97,14 +98,13 @@ def layout_report(
     if aggregates_path.exists():
         aggregates = json.loads(aggregates_path.read_text())
     else:
-        # Reconstruct from summary cells.
+        from realdoc_bench.layout.metrics import structural_errors as struct
+        from realdoc_bench.layout.metrics.f1 import PRF
         from realdoc_bench.layout.runner import (
             CellResult,
             RunSummary,
             aggregate_summary,
         )
-        from realdoc_bench.layout.metrics.f1 import PRF
-        from realdoc_bench.layout.metrics import structural_errors as struct
 
         cells: list[CellResult] = []
         for c in summary["cells"]:
@@ -124,8 +124,9 @@ def layout_report(
                     page_id=c["page_id"], domain=c["domain"], processor=c["processor"],
                     version=c["version"], status=c["status"], error=c.get("error"),
                     latency_sec=c.get("latency_sec"), cost_estimate_usd=c.get("cost_estimate_usd"),
-                    confidence_present=c.get("confidence_present", False), strict=strict, per_class=per_cls,
-                    structural=errors, pred_count=c.get("pred_count", 0), gt_count=c.get("gt_count", 0),
+                    confidence_present=c.get("confidence_present", False),
+                    strict=strict, per_class=per_cls, structural=errors,
+                    pred_count=c.get("pred_count", 0), gt_count=c.get("gt_count", 0),
                 )
             )
         run_summary = RunSummary(
@@ -140,100 +141,179 @@ def layout_report(
     console.print(f"report: {md_path}")
 
 
-# ── Extraction ──────────────────────────────────────────────────────────────
+# ── Evaluate ────────────────────────────────────────────────────────────────
+# Convention: every evaluate.* command pulls .env from the current working
+# directory so API keys are picked up without an explicit env var.
+
+def _env() -> None:
+    load_dotenv(Path.cwd() / ".env")
 
 
-@extract_app.command("list")
-def extract_list(what: str = typer.Argument("parsers", help="parsers | agents | datasets")) -> None:
-    if what == "parsers":
-        names = parser_registry.names()
-        title = "Parse providers"
-    elif what == "agents":
-        names = agent_registry.names()
-        title = "Extraction agents"
-    elif what == "datasets":
-        datasets_root = Path(__file__).resolve().parents[1] / "datasets" / "extraction"
-        names = [p.parent.name for p in datasets_root.glob("*/manifest.yaml")]
-        title = "Extraction datasets"
-    else:
-        raise typer.BadParameter("expected one of: parsers, agents, datasets")
-    table = Table(title=title)
-    table.add_column("name")
-    for n in names:
-        table.add_row(n)
+@evaluate_app.command("list")
+def evaluate_list() -> None:
+    """List registered parse providers."""
+    table = Table(title="Parse providers")
+    table.add_column("name"); table.add_column("version")
+    for name in parser_registry.names():
+        cls = parser_registry.get(name)
+        table.add_row(name, getattr(cls, "version", ""))
     console.print(table)
 
 
-def _resolve_manifest(dataset: str) -> Path:
-    repo_root = Path(__file__).resolve().parents[1]
-    path = repo_root / "datasets" / "extraction" / dataset / "manifest.yaml"
-    if not path.exists():
-        raise typer.BadParameter(f"no manifest at {path}")
-    return path
-
-
-@extract_app.command("run")
-def extract_run(
-    dataset: str = typer.Option("v0", "--dataset"),
-    parser: list[str] = typer.Option(..., "--parser", "-p"),
-    agent: list[str] = typer.Option(..., "--agent", "-a"),
-    doc_id: list[str] | None = typer.Option(None, "--doc-id"),
-    split: str | None = typer.Option(None, "--split"),
-    profile: str = typer.Option("default", "--profile"),
-    run_id: str | None = typer.Option(None, "--run-id"),
-    run_dir: Path = typer.Option(Path("runs"), "--run-dir"),
-    no_cache: bool = typer.Option(False, "--no-cache"),
+@evaluate_app.command("download")
+def evaluate_download(
+    run_dir: Path = typer.Option(..., "--run-dir", help="destination run dir"),
+    dataset: str = typer.Option(..., "--dataset",
+                                help="HF dataset repo id (e.g. extend-ai/realdoc-bench-qa)"),
+    revision: str | None = typer.Option(None, "--revision"),
+    hf_token: str | None = typer.Option(None, "--hf-token",
+                                         help="overrides HF_TOKEN env"),
+    force: bool = typer.Option(False, "--force",
+                                help="re-download even if files already present"),
 ) -> None:
-    manifest_path = _resolve_manifest(dataset)
-    summary = ext_run(
-        manifest_path=manifest_path,
-        parsers=parser,
-        agents=agent,
-        doc_ids=doc_id,
-        split=split,
-        profile_name=profile,
-        run_id=run_id,
-        run_dir=run_dir,
-        no_cache=no_cache,
+    """Pull bank.json + pdfs/ from a HF dataset repo into <run-dir>/."""
+    _env()
+    layout = RunLayout.at(run_dir)
+    res = download_dataset(layout, repo_id=dataset, revision=revision,
+                           hf_token=hf_token, force=force)
+    console.print(
+        f"downloaded → {layout.root}: {res['pdfs']} pdfs, "
+        f"bank={'yes' if res['bank'] else 'NO'}"
     )
-    console.print(f"run_id = [bold]{summary.run_id}[/bold]")
-    aggregates = ext_aggregate(summary)
-    table = Table(title=f"Extraction results — {dataset}")
-    table.add_column("parser"); table.add_column("agent")
-    table.add_column("F1"); table.add_column("$/doc"); table.add_column("latency_s/doc")
-    for (p_name, a_name), agg in sorted(
-        aggregates.items(),
-        key=lambda kv: (kv[1].get("mean_f1") or 0.0),
-        reverse=True,
-    ):
+
+
+@evaluate_app.command("parse")
+def evaluate_parse(
+    run_dir: Path = typer.Option(..., "--run-dir"),
+    parser: list[str] = typer.Option(..., "--parser", "-p",
+                                      help="parser name; repeat for several"),
+    force: bool = typer.Option(False, "--force",
+                                help="re-parse even if cached"),
+    retry_errors: bool = typer.Option(False, "--retry-errors",
+                                       help="retry previously-errored entries"),
+    workers: int = typer.Option(8, "--workers"),
+    limit: int | None = typer.Option(None, "--limit",
+                                      help="parse only the first N pdfs (smoke)"),
+) -> None:
+    """Parse every PDF under <run-dir>/pdfs/ with each --parser."""
+    _env()
+    layout = RunLayout.at(run_dir)
+    records = ev_parse.run_parse(
+        layout, parser, force=force, retry_errors=retry_errors,
+        workers=workers, limit=limit,
+    )
+    table = Table(title="Parse results")
+    for col in ("parser", "pdfs", "ok", "fail", "cached", "median lat (s)",
+                "$/doc"):
+        table.add_column(col)
+    by_parser: dict[str, list] = {}
+    for r in records:
+        by_parser.setdefault(r.parser, []).append(r)
+    for pname, rs in sorted(by_parser.items()):
+        ok = sum(1 for r in rs if r.ok)
+        fail = sum(1 for r in rs if not r.ok)
+        cached = sum(1 for r in rs if r.cached)
+        lats = sorted(r.latency_sec for r in rs if r.ok and not r.cached)
+        med = lats[len(lats) // 2] if lats else 0.0
+        cost = (sum(r.cost_usd for r in rs if r.ok) / max(ok, 1))
+        table.add_row(pname, str(len(rs)), str(ok), str(fail), str(cached),
+                      f"{med:.2f}", f"{cost:.4f}")
+    console.print(table)
+
+
+def _score_and_print(layout: RunLayout, parsers: list[str], *,
+                     bank_path: Path | None, force: bool, workers: int,
+                     limit: int | None) -> list[ev_score.ScoreRecord]:
+    records = ev_score.run_score(
+        layout, parsers or None, bank_path=bank_path,
+        force=force, workers=workers, limit=limit,
+    )
+    used_parsers = sorted({r.parser for r in records})
+    summary = ev_score.summarize(records, used_parsers)
+    table = Table(title="QA score")
+    for col in ("parser", "per-field %", "field ok/total",
+                "per-question %", "q ok/total"):
+        table.add_column(col)
+    for p, s in sorted(summary.items(), key=lambda kv: -kv[1]["field_pct"]):
         table.add_row(
-            p_name,
-            a_name,
-            f"{agg['mean_f1']:.3f}" if agg.get("mean_f1") is not None else "—",
-            f"{agg['mean_total_cost_usd']:.4f}" if agg.get("mean_total_cost_usd") is not None else "—",
-            f"{(agg.get('mean_parse_latency_sec') or 0.0) + (agg.get('mean_agent_latency_sec') or 0.0):.2f}",
+            p, f"{s['field_pct']:.1f}",
+            f"{s['field_ok']}/{s['field_tot']}",
+            f"{s['q_pct']:.1f}", f"{s['q_ok']}/{s['q_tot']}",
         )
     console.print(table)
+    return records
 
 
-@extract_app.command("schema-walk")
-def extract_schema_walk(
-    dataset: str = typer.Option("v0", "--dataset"),
-    doc_id: str = typer.Option(..., "--doc-id"),
+@evaluate_app.command("score")
+def evaluate_score(
+    run_dir: Path = typer.Option(..., "--run-dir"),
+    parser: list[str] = typer.Option(
+        None, "--parser", "-p",
+        help="parser name; repeat for several. Default: all parsers with parses."),
+    bank: Path | None = typer.Option(None, "--bank",
+                                      help="bank.json; default: <run-dir>/bank.json"),
+    force: bool = typer.Option(False, "--force",
+                                help="re-call the model (rescore on cached hits is free)"),
+    workers: int = typer.Option(16, "--workers"),
+    limit: int | None = typer.Option(None, "--limit",
+                                      help="score only the first N items (smoke)"),
 ) -> None:
-    """Print every leaf path the scoring engine would walk for a given doc's schema."""
-    from realdoc_bench.extraction.manifest import Manifest as M
-    from realdoc_bench.extraction.schema.walk import walk_leaves
+    """Score every (item × parser) pair against the bank.
 
-    manifest_path = _resolve_manifest(dataset)
-    manifest = M.load(manifest_path)
-    entry = next((d for d in manifest.docs if d.doc_id == doc_id), None)
-    if entry is None:
-        raise typer.BadParameter(f"no such doc_id: {doc_id}")
-    schema_path = manifest_path.parent / entry.schema_path
-    schema = json.loads(schema_path.read_text())
-    table = Table(title=f"Schema leaves — {doc_id}")
-    table.add_column("path"); table.add_column("type"); table.add_column("difficulty"); table.add_column("capabilities")
-    for leaf in walk_leaves(schema):
-        table.add_row(leaf.path, leaf.leaf_type, leaf.difficulty or "—", ",".join(leaf.capabilities) or "—")
-    console.print(table)
+    On cache hit, the cached answer is re-scored with the current scoring
+    code (no model call). To re-score after editing thresholds, just re-run
+    this command — there is no separate rescore verb.
+    """
+    _env()
+    layout = RunLayout.at(run_dir)
+    _score_and_print(layout, parser or [], bank_path=bank,
+                     force=force, workers=workers, limit=limit)
+    ev_score.aggregate_results(layout)
+
+
+@evaluate_app.command("report")
+def evaluate_report(
+    run_dir: Path = typer.Option(..., "--run-dir"),
+    bank: Path | None = typer.Option(None, "--bank"),
+    out: Path | None = typer.Option(None, "--out"),
+    merge_domains: str | None = typer.Option(
+        None, "--merge-domains",
+        help="src=dst,src2=dst2 — fold one domain into another for display"),
+) -> None:
+    """Build the dashboard from cached eval results."""
+    layout = RunLayout.at(run_dir)
+    merge: dict[str, str] = {}
+    if merge_domains:
+        for pair in merge_domains.split(","):
+            src, dst = pair.split("=")
+            merge[src.strip()] = dst.strip()
+    out_path = ev_report.build_report(layout, bank_path=bank, out_path=out,
+                                       merge_domains=merge)
+    ev_score.aggregate_results(layout)
+    console.print(f"dashboard: {out_path}")
+
+
+@evaluate_app.command("run")
+def evaluate_run(
+    run_dir: Path = typer.Option(..., "--run-dir"),
+    parser: list[str] = typer.Option(..., "--parser", "-p"),
+    bank: Path | None = typer.Option(None, "--bank"),
+    force: bool = typer.Option(False, "--force"),
+    workers: int = typer.Option(8, "--workers"),
+) -> None:
+    """parse → score → report end-to-end. --force is threaded through both
+    parse and score, so you really do redo everything."""
+    _env()
+    layout = RunLayout.at(run_dir)
+
+    console.rule("[1/3] parse")
+    ev_parse.run_parse(layout, parser, force=force, workers=workers)
+
+    console.rule("[2/3] score")
+    _score_and_print(layout, parser, bank_path=bank, force=force,
+                     workers=max(workers * 2, 16), limit=None)
+    ev_score.aggregate_results(layout)
+
+    console.rule("[3/3] report")
+    out = ev_report.build_report(layout, bank_path=bank)
+    console.print(f"dashboard: {out}")

@@ -1,0 +1,199 @@
+<!doctype html><html lang=en><head><meta charset=utf-8>
+<meta name=viewport content="width=device-width,initial-scale=1">
+<title>realdoc-bench — QA evaluation</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+background:#f4f6f9;color:#1f2933;line-height:1.5}
+.wrap{max-width:1340px;margin:0 auto;padding:26px}
+header h1{font-size:23px;font-weight:720}
+header h1 .a{color:#2563eb}
+header .sub{color:#69727d;font-size:13.5px;margin-top:4px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:14px;margin:20px 0}
+.kpi{background:#fff;border:1px solid #e5e9ef;border-radius:11px;padding:16px 18px;
+box-shadow:0 1px 3px rgba(20,30,50,.05)}
+.kpi .l{font-size:11.5px;color:#69727d;text-transform:uppercase;letter-spacing:.6px}
+.kpi .v{font-size:27px;font-weight:730;margin-top:5px}
+.kpi .v.hl{color:#2563eb}
+.panel{background:#fff;border:1px solid #e5e9ef;border-radius:11px;padding:20px 22px;
+margin-bottom:18px;box-shadow:0 1px 3px rgba(20,30,50,.05)}
+.panel h2{font-size:14px;font-weight:680;margin-bottom:4px}
+.panel .note{font-size:12px;color:#69727d;margin-bottom:14px}
+.chartbox{height:300px}
+.charts2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
+.chartsdom{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:22px}
+.chartcell h3{font-size:12px;font-weight:680;color:#3b46c4;margin-bottom:8px;
+text-align:center;text-transform:capitalize}
+@media(max-width:800px){.charts2{grid-template-columns:1fr}}
+.bar{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
+.bar .nm{width:160px;flex:none;font-weight:600}
+.bar .tk{flex:1;background:#eef1f5;border-radius:6px;height:22px;overflow:hidden}
+.bar .fl{height:100%;border-radius:6px}
+.bar .pc{width:140px;flex:none;text-align:right;color:#69727d;font-variant-numeric:tabular-nums}
+.filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+.filters input,.filters select{border:1px solid #d3d9e2;border-radius:8px;
+padding:7px 10px;font-size:13px;font-family:inherit}
+.filters input{flex:1;min-width:200px;max-width:380px}
+.filters .ct{margin-left:auto;color:#69727d;font-size:12.5px}
+.q{border:1px solid #e5e9ef;border-radius:11px;margin-bottom:13px;overflow:hidden}
+.q-head{padding:12px 15px;background:#fbfcfd;border-bottom:1px solid #eef1f5}
+.q-head .qt{font-size:13.5px;font-weight:600}
+.q-head .meta{font-size:11.5px;color:#69727d;margin-top:4px}
+.q-head .sec{display:inline-block;background:#eef2ff;color:#3b46c4;border-radius:5px;
+padding:1px 7px;font-weight:600;margin-right:6px}
+.q-body{overflow-x:auto}
+table.qa{border-collapse:collapse;width:100%;font-size:11.5px}
+.qa th,.qa td{border:1px solid #eef1f5;padding:6px 9px;text-align:left;vertical-align:top}
+.qa th{background:#f7f8fa;color:#69727d;font-weight:600;white-space:nowrap;
+font-size:10.5px;text-transform:uppercase;letter-spacing:.4px}
+td.fld{font-weight:600;white-space:nowrap;background:#fbfcfd}
+td.gold{background:#eff6ff;font-weight:600;font-family:ui-monospace,Menlo,monospace}
+td.cell{font-family:ui-monospace,Menlo,monospace}
+td.ok{background:#e9f9ee;color:#0f7a35}
+td.no{background:#fdecec;color:#c0362c}
+td.na{color:#aab2bd}
+footer{color:#8a929c;font-size:11.5px;text-align:center;padding:10px 0 30px}
+</style></head><body><div class=wrap>
+
+<header>
+  <h1>realdoc-bench — <span class=a>{TITLE}</span></h1>
+  <div class=sub>{SUBTITLE}</div>
+</header>
+
+<div class=kpis>
+  <div class=kpi><div class=l>Top parser</div><div class="v hl">{TOP_NAME}</div></div>
+  <div class=kpi><div class=l>Top per-field accuracy</div><div class=v>{TOP_PCT}</div></div>
+  <div class=kpi><div class=l>Questions</div><div class=v>{N_Q}</div></div>
+  <div class=kpi><div class=l>Documents</div><div class=v>{N_DOCS}</div></div>
+  <div class=kpi><div class=l>Domains</div><div class=v>{N_DOM}</div></div>
+  <div class=kpi><div class=l>Eval calls</div><div class=v>{N_CALLS}</div></div>
+</div>
+
+<div class=panel>
+  <h2>Per-parser accuracy</h2>
+  <div class=note>Per-field — each key in a multi-key question scored
+  independently. Per-question — all keys in a question correct.</div>
+  <div class=charts2>
+    <div class=chartcell><h3>Per-field accuracy</h3>
+      <div class=chartbox><canvas id=chartField></canvas></div></div>
+    <div class=chartcell><h3>Per-question accuracy</h3>
+      <div class=chartbox><canvas id=chartQuestion></canvas></div></div>
+  </div>
+  <div id=bars style="margin-top:18px"></div>
+</div>
+
+<div class=panel>
+  <h2>Per-domain accuracy (per-field)</h2>
+  <div class=note>How each parser does across document domains —
+  one chart per domain, parsers ordered by overall rank.</div>
+  <div class=chartsdom id=domcharts></div>
+</div>
+
+<div class=panel>
+  <h2>Questions &amp; extractions</h2>
+  <div class=note>Each question's typed gold vs what every parser pulled from
+  its markdown. Green = correct field, red = wrong. Hardest questions first.</div>
+  <div class=filters>
+    <input id=search placeholder="search question / document…">
+    <select id=fdomain><option value="">all domains</option></select>
+    <select id=fparser><option value="">highlight: none</option></select>
+    <label style="font-size:12.5px;color:#69727d">
+      <input type=checkbox id=fonlywrong> only questions with a miss</label>
+    <span class=ct id=count></span>
+  </div>
+  <div id=qlist></div>
+</div>
+
+<footer>realdoc-bench · generated from {RUN_DIR}</footer>
+</div>
+<script>
+const DATA = /*DATA*/;
+const PK = DATA.parsers.map(p=>p[0]), PLAB = Object.fromEntries(DATA.parsers);
+const COLORS = {extend_performance_v2_0_0_advanced:'#2563eb',
+  extend_light_v1_0_0:'#0d9488', extend_performance_v1_0_0:'#60a5fa'};
+const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>(
+  {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=v=>v===null?'null':typeof v==='string'?v:JSON.stringify(v);
+
+const sum=DATA.summary;
+const mkBar=(id,vals,suffix)=>new Chart(document.getElementById(id),{type:'bar',
+  data:{labels:sum.map(s=>s.label),datasets:[{data:vals,
+    backgroundColor:sum.map(s=>COLORS[s.key]||'#94a3b8'),borderRadius:5}]},
+  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+    scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}},
+    plugins:{legend:{display:false},
+      tooltip:{callbacks:{label:c=>c.parsed.x+suffix}}}}});
+mkBar('chartField',sum.map(s=>s.field_pct),'% per-field');
+mkBar('chartQuestion',sum.map(s=>s.q_pct),'% per-question');
+
+document.getElementById('bars').innerHTML=sum.map(s=>{
+  const c=COLORS[s.key]||'#94a3b8';
+  return `<div class=bar><div class=nm>${esc(s.label)}</div>
+  <div class=tk><div class=fl style="width:${s.field_pct}%;background:${c}"></div></div>
+  <div class=pc>${s.field_pct}% &middot; ${s.q_pct}% q</div></div>`;}).join('');
+
+const dcWrap=document.getElementById('domcharts');
+const ord=sum.map(s=>s.key);
+DATA.domains.forEach(d=>{
+  const cell=document.createElement('div');
+  cell.className='chartcell';
+  cell.innerHTML=`<h3>${esc(d.replace(/_/g,' '))}</h3>`+
+    `<div class=chartbox><canvas></canvas></div>`;
+  dcWrap.appendChild(cell);
+  new Chart(cell.querySelector('canvas'),{type:'bar',
+    data:{labels:ord.map(k=>PLAB[k]),datasets:[{
+      data:ord.map(k=>(DATA.dom_matrix[k]||{})[d]),
+      backgroundColor:ord.map(k=>COLORS[k]||'#94a3b8'),borderRadius:5}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>c.parsed.x+'% per-field'}}}}});
+});
+
+const fp=document.getElementById('fparser');
+DATA.parsers.forEach(([k,l])=>fp.add(new Option('highlight: '+l,k)));
+const fd=document.getElementById('fdomain');
+DATA.domains.forEach(d=>fd.add(new Option(d,d)));
+
+const ql=document.getElementById('qlist');
+function card(q){
+  let hi=fp.value;
+  let head=`<div class=q-head><div class=qt>${esc(q.question)}</div>
+    <div class=meta><span class=sec>${esc(q.domain||'—')}</span>
+    ${esc(q.doc)} &middot; ${q.n_correct}/${q.n_parsers} parsers fully correct</div></div>`;
+  let cols=PK.filter(k=>q.fields.some(f=>f.ans[k]));
+  let th=`<tr><th>field</th><th>GOLD</th>`+
+    cols.map(k=>`<th${k===hi?' style="background:#dde8ff"':''}>${esc(PLAB[k])}</th>`).join('')+`</tr>`;
+  let rows=q.fields.map(f=>{
+    let tds=cols.map(k=>{
+      let a=f.ans[k];
+      if(!a)return `<td class="cell na">—</td>`;
+      return `<td class="cell ${a.ok?'ok':'no'}">${a.ok?'✓':'✗'} ${esc(fmt(a.v))}</td>`;
+    }).join('');
+    return `<tr><td class=fld>${esc(f.key)}</td>
+      <td class=gold>${esc(fmt(f.gold))}</td>${tds}</tr>`;
+  }).join('');
+  return `<div class=q>${head}<div class=q-body><table class=qa>${th}${rows}</table></div></div>`;
+}
+function render(){
+  const s=document.getElementById('search').value.toLowerCase().trim();
+  const ow=document.getElementById('fonlywrong').checked;
+  const dom=fd.value;
+  let qs=DATA.questions.filter(q=>{
+    if(ow && q.n_correct===q.n_parsers) return false;
+    if(dom && q.domain!==dom) return false;
+    if(s){const h=(q.question+' '+q.doc).toLowerCase();
+      if(!h.includes(s))return false;}
+    return true;});
+  document.getElementById('count').textContent=qs.length+' / '+DATA.questions.length+' questions';
+  ql.innerHTML=qs.slice(0,400).map(card).join('')+
+    (qs.length>400?`<div class=note style="text-align:center">showing first 400 (hardest)</div>`:'');
+}
+document.getElementById('search').oninput=render;
+document.getElementById('fonlywrong').onchange=render;
+fd.onchange=render;
+fp.onchange=render;
+render();
+</script></body></html>
