@@ -18,8 +18,8 @@ uv sync
 The full pipeline is download → parse → score → report. Every stage is per-parser scoped, cached, and reusable.
 
 ```bash
-# 1. Pull the bench dataset (bank.json + pdfs/) from the HF Hub
-realdoc-bench evaluate download --run-dir runs/v6 --dataset extend-ai/realdoc-bench-qa
+# 1. Pull the bench dataset (qa_bank.json + docs/) from the HF Hub
+realdoc-bench evaluate download --run-dir runs/v6 --dataset Extend-AI/Realdoc-Bench
 
 # 2. Parse every PDF with one or more parsers (idempotent; --force to re-parse)
 realdoc-bench evaluate parse --run-dir runs/v6 -p reducto -p aws_textract -p azure_di
@@ -42,8 +42,8 @@ realdoc-bench evaluate run --run-dir runs/v6 -p reducto -p aws_textract
 
 ```
 runs/v6/
-  pdfs/                          # input — PDFs
-  bank.json                      # input — typed-template QA bank
+  docs/                          # input — documents (PDFs)
+  qa_bank.json                   # input — typed-template QA bank
   parses/<parser>/<stem>.md      # parser output (+ <stem>.json meta)
   eval/cache/<qid>__<parser>.json   # per-(question, parser) scoring cache
   eval/results.json              # flat snapshot rebuilt by `report`
@@ -101,7 +101,7 @@ python -m realdoc_bench.layout.metrics.adjacency.rescore --run-id <id> --merge-p
 Distributed via the [Hugging Face Hub](https://huggingface.co/Extend-AI) under the `Extend-AI` org. Private during development; gated by a one-time legal review for the public sets.
 
 - [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) — 1,500-page layout benchmark with COCO annotations.
-- `Extend-AI/realdoc-bench-qa` — QA-extraction bench (TBD; what `evaluate download` pulls).
+- [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench) — QA-extraction bench (1,359 questions × 581 documents, private). What `evaluate download` pulls.
 
 The list of pages and per-page metadata for the layout set ships in `datasets/layout/manifest.csv`; image and annotation blobs live on HF.
 

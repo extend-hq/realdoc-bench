@@ -10,7 +10,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from realdoc_bench.extraction.parsers.base import (
+from realdoc_bench.evaluate.parsers.base import (
     ParseProvider,
     ParseResult,
     register_parser,

@@ -17,8 +17,8 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from realdoc_bench.extraction.parsers._vision_base import OpenAIVisionParserBase
-from realdoc_bench.extraction.parsers.base import register_parser
+from realdoc_bench.evaluate.parsers._vision_base import OpenAIVisionParserBase
+from realdoc_bench.evaluate.parsers.base import register_parser
 
 _LAYOUT_ALL_PROMPT = (
     "Please output the layout information from the PDF image, including each "

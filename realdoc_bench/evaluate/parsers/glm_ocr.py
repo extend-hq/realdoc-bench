@@ -18,8 +18,8 @@ Note: there are two GLM-OCRs in play —
 
 from __future__ import annotations
 
-from realdoc_bench.extraction.parsers._vision_base import OpenAIVisionParserBase
-from realdoc_bench.extraction.parsers.base import register_parser
+from realdoc_bench.evaluate.parsers._vision_base import OpenAIVisionParserBase
+from realdoc_bench.evaluate.parsers.base import register_parser
 
 _MARKDOWN_PROMPT = (
     "Convert this document page to clean, faithful Markdown.\n"

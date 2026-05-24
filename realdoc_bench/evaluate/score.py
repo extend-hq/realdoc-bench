@@ -352,6 +352,23 @@ def load_bank(path: Path) -> list[dict]:
     return items
 
 
+def docs_for_items(items: list[dict]) -> list[str]:
+    """Ordered unique `source_file` stems referenced by these bank items.
+
+    All `--limit N` flows ultimately resolve to "the source_files referenced
+    by the first N bank items" — this helper is the single source of truth
+    so download, parse, and score stay aligned for smoke runs.
+    """
+    seen: set[str] = set()
+    out: list[str] = []
+    for it in items:
+        sf = it.get("source_file")
+        if sf and sf not in seen:
+            seen.add(sf)
+            out.append(sf)
+    return out
+
+
 def run_score(layout: RunLayout, parsers: list[str] | None = None, *,
               bank_path: Path | None = None, force: bool = False,
               workers: int = 16, limit: int | None = None,

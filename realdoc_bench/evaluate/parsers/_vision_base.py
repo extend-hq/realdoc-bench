@@ -23,7 +23,7 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Any
 
-from realdoc_bench.extraction.parsers.base import ParseProvider, ParseResult
+from realdoc_bench.evaluate.parsers.base import ParseProvider, ParseResult
 from realdoc_bench.shared.pricing.meter import agent_cost, parse_cost
 
 DEFAULT_DPI = 150
