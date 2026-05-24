@@ -1,4 +1,8 @@
-# realdoc-bench
+<p align="center">
+  <img src="docs/assets/realdocbench_logo.png" alt="RealDocBench — A Real-World Benchmark for Document Agents" width="100%">
+</p>
+
+# RealDocBench
 
 A document parsing benchmark that measures two things on real documents:
 
@@ -7,11 +11,34 @@ A document parsing benchmark that measures two things on real documents:
 
 Each mode reports cost and latency alongside quality.
 
-## Install
+## Full Leaderboard (1,359 questions)
 
+| Parser | Per-field Accuracy | Per-question Accuracy |
+| --- | ---: | ---: |
+| **Extend v2 - Performance** | **95.7%** | **90.3%** |
+| LlamaParse (Agentic) | 92.1% | 84.3% |
+| Reducto (Agentic) | 91.1% | 83.1% |
+| Extend v1 | 90.4% | 81.8% |
+| Gemini 3.5 Flash | 89.0% | 81.6% |
+| LlamaParse | 89.0% | 80.4% |
+| Azure DI | 88.8% | 78.9% |
+| Reducto | 88.5% | 80.2% |
+| AWS Textract | 70.5% | 53.6% |
+
+## Installation
 ```bash
 uv sync
 ```
+
+## API Keys
+
+All secrets load from `.env` at the repo root (auto-loaded by the CLI). Keys needed per command:
+
+- `score` — `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
+- `parse` — whatever the parsers require: `ANTHROPIC_API_KEY`, `EXTEND_API_KEY`, `LLAMA_CLOUD_API_KEY`, AWS / Azure creds, …
+- `download` and the layout dataset fetch — `HF_TOKEN` (for the private datasets)
+
+**Dataset overrides** — point `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` at a local snapshot to skip the HF download.
 
 ## QA-extraction benchmark — `evaluate`
 
@@ -56,7 +83,7 @@ runs/qa/
 - `score` skips `(qid, parser)` when the cache file exists. **On hit, the cached answer is re-scored with the current scoring code**, so editing scoring thresholds + re-running `score` updates verdicts without spending a single API call. `--force` re-calls the model.
 - Per-parser scope is strict: scoring `-p X` never touches any other parser's cache files.
 
-**API keys** — drop them in `.env` at the repo root; the CLI loads it automatically. `score` needs `GEMINI_API_KEY` (or `GOOGLE_API_KEY`); `parse` needs whatever the parsers require (`ANTHROPIC_API_KEY`, `EXTEND_API_KEY`, `LLAMA_CLOUD_API_KEY`, AWS / Azure creds, ...); `download` needs `HF_TOKEN` for private datasets.
+**API keys** — see [API Keys](#api-keys). `score` needs `GEMINI_API_KEY`, `parse` needs whatever the parsers require, `download` needs `HF_TOKEN`.
 
 ## Layout benchmark — `layout`
 
