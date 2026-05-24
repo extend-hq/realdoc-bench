@@ -25,7 +25,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from realdoc_bench.extraction.parsers.base import (
+from realdoc_bench.evaluate.parsers.base import (
     ParseProvider,
     ParseResult,
     register_parser,

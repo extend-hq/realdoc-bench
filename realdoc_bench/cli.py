@@ -17,8 +17,8 @@ from rich.console import Console
 from rich.table import Table
 
 # Side-effect imports register all decorated parsers/processors.
-from realdoc_bench.extraction import parsers as _parsers  # noqa: F401
-from realdoc_bench.extraction.parsers.base import registry as parser_registry
+from realdoc_bench.evaluate import parsers as _parsers  # noqa: F401
+from realdoc_bench.evaluate.parsers.base import registry as parser_registry
 from realdoc_bench.evaluate import parse as ev_parse
 from realdoc_bench.evaluate import report as ev_report
 from realdoc_bench.evaluate import score as ev_score
@@ -188,14 +188,18 @@ def evaluate_download(
                                          help="overrides HF_TOKEN env"),
     force: bool = typer.Option(False, "--force",
                                 help="re-download even if files already present"),
+    limit: int | None = typer.Option(
+        None, "--limit",
+        help="smoke mode: pull bank + the docs referenced by the first N "
+             "bank items (matches parse/score --limit semantics)"),
 ) -> None:
-    """Pull bank.json + pdfs/ from a HF dataset repo into <run-dir>/."""
+    """Pull qa_bank.json + docs/ from a HF dataset repo into <run-dir>/."""
     _env()
     layout = RunLayout.at(run_dir)
     res = download_dataset(layout, repo_id=dataset, revision=revision,
-                           hf_token=hf_token, force=force)
+                           hf_token=hf_token, force=force, limit=limit)
     console.print(
-        f"downloaded → {layout.root}: {res['pdfs']} pdfs, "
+        f"downloaded → {layout.root}: {res['docs']} docs, "
         f"bank={'yes' if res['bank'] else 'NO'}"
     )
 
@@ -205,23 +209,29 @@ def evaluate_parse(
     run_dir: Path = typer.Option(..., "--run-dir"),
     parser: list[str] = typer.Option(..., "--parser", "-p",
                                       help="parser name; repeat for several"),
+    bank: Path | None = typer.Option(
+        None, "--bank",
+        help="qa_bank.json; default: <run-dir>/qa_bank.json. Only consulted "
+             "when --limit is set, to pick which docs the limit covers."),
     force: bool = typer.Option(False, "--force",
                                 help="re-parse even if cached"),
     retry_errors: bool = typer.Option(False, "--retry-errors",
                                        help="retry previously-errored entries"),
     workers: int = typer.Option(8, "--workers"),
-    limit: int | None = typer.Option(None, "--limit",
-                                      help="parse only the first N pdfs (smoke)"),
+    limit: int | None = typer.Option(
+        None, "--limit",
+        help="smoke mode: parse only the docs referenced by the first N "
+             "bank items"),
 ) -> None:
-    """Parse every PDF under <run-dir>/pdfs/ with each --parser."""
+    """Parse every document under <run-dir>/docs/ with each --parser."""
     _env()
     layout = RunLayout.at(run_dir)
     records = ev_parse.run_parse(
-        layout, parser, force=force, retry_errors=retry_errors,
+        layout, parser, bank_path=bank, force=force, retry_errors=retry_errors,
         workers=workers, limit=limit,
     )
     table = Table(title="Parse results")
-    for col in ("parser", "pdfs", "ok", "fail", "cached", "median lat (s)",
+    for col in ("parser", "docs", "ok", "fail", "cached", "median lat (s)",
                 "$/doc"):
         table.add_column(col)
     by_parser: dict[str, list] = {}
@@ -269,7 +279,7 @@ def evaluate_score(
         None, "--parser", "-p",
         help="parser name; repeat for several. Default: all parsers with parses."),
     bank: Path | None = typer.Option(None, "--bank",
-                                      help="bank.json; default: <run-dir>/bank.json"),
+                                      help="qa_bank.json; default: <run-dir>/qa_bank.json"),
     force: bool = typer.Option(False, "--force",
                                 help="re-call the model (rescore on cached hits is free)"),
     workers: int = typer.Option(16, "--workers"),
@@ -324,18 +334,23 @@ def evaluate_run(
     bank: Path | None = typer.Option(None, "--bank"),
     force: bool = typer.Option(False, "--force"),
     workers: int = typer.Option(8, "--workers"),
+    limit: int | None = typer.Option(
+        None, "--limit",
+        help="smoke mode: parse only the first N docs + score only those Qs"),
 ) -> None:
     """parse → score → report end-to-end. --force is threaded through both
-    parse and score, so you really do redo everything."""
+    parse and score, so you really do redo everything. --limit caps the doc
+    set for a smoke run."""
     _env()
     layout = RunLayout.at(run_dir)
 
     console.rule("[1/3] parse")
-    ev_parse.run_parse(layout, parser, force=force, workers=workers)
+    ev_parse.run_parse(layout, parser, bank_path=bank,
+                       force=force, workers=workers, limit=limit)
 
     console.rule("[2/3] score")
     _score_and_print(layout, parser, bank_path=bank, force=force,
-                     workers=max(workers * 2, 16), limit=None)
+                     workers=max(workers * 2, 16), limit=limit)
     ev_score.aggregate_results(layout)
 
     console.rule("[3/3] report")

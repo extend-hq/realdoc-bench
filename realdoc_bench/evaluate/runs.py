@@ -3,8 +3,8 @@
 A run dir holds everything for one (dataset, parser-set) experiment:
 
     <run-dir>/
-      pdfs/                            input PDFs
-      bank.json                        typed-template QA bank
+      docs/                            input documents (PDFs)
+      qa_bank.json                     typed-template QA bank
       parses/<parser>/<stem>.md        parser output
       parses/<parser>/<stem>.json      parse metadata
       eval/cache/<qid>__<parser>.json  per-(question, parser) scoring cache
@@ -37,14 +37,15 @@ class RunLayout:
 
     # ── Inputs ──────────────────────────────────────────────────────────────
     @property
-    def pdfs_dir(self) -> Path:
-        return self.root / "pdfs"
+    def docs_dir(self) -> Path:
+        """Input documents (PDFs) — `<run-dir>/docs/`."""
+        return self.root / "docs"
 
     @property
     def bank_path(self) -> Path:
-        """Default bank location — `<run-dir>/bank.json`. CLI commands can
+        """Default bank location — `<run-dir>/qa_bank.json`. CLI commands can
         override with `--bank PATH` so the bank can live elsewhere."""
-        return self.root / "bank.json"
+        return self.root / "qa_bank.json"
 
     # ── Parse stage ─────────────────────────────────────────────────────────
     @property
@@ -90,5 +91,5 @@ class RunLayout:
 
     # ── Setup ───────────────────────────────────────────────────────────────
     def ensure_dirs(self) -> None:
-        for d in (self.pdfs_dir, self.parses_root, self.cache_dir):
+        for d in (self.docs_dir, self.parses_root, self.cache_dir):
             d.mkdir(parents=True, exist_ok=True)

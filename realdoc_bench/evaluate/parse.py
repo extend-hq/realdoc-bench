@@ -1,4 +1,4 @@
-"""Parse stage — run each parser over every PDF in `<run-dir>/pdfs/`.
+"""Parse stage — run each parser over every document in `<run-dir>/docs/`.
 
 Cached by `(parser, doc_stem)`: a `(parser, doc)` is skipped when its `.md` and
 `.json` both exist and the json's `ok=true`. `--force` busts the cache for the
@@ -18,7 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from realdoc_bench.evaluate.runs import RunLayout
-from realdoc_bench.extraction.parsers.base import ParseProvider, registry
+from realdoc_bench.evaluate.parsers.base import ParseProvider, registry
+from realdoc_bench.evaluate.score import docs_for_items, load_bank
 
 
 @dataclass
@@ -102,15 +103,34 @@ def _cached_record(layout: RunLayout, parser: str, stem: str) -> ParseRecord:
 
 
 def run_parse(layout: RunLayout, parsers: list[str], *,
+              bank_path: Path | None = None,
               force: bool = False, retry_errors: bool = False,
               workers: int = 8, limit: int | None = None,
               progress: bool = True) -> list[ParseRecord]:
+    """Parse every PDF under `<run-dir>/docs/` with each parser.
+
+    When `limit` is set, the scope is restricted to the source_files referenced
+    by the first `limit` items of the bank (same selection rule as `score`
+    and `download`, keeping all three flows consistent). The bank is loaded
+    from `bank_path` or `layout.bank_path` if unset.
+    """
     layout.ensure_dirs()
-    pdfs = sorted(layout.pdfs_dir.glob("*.pdf"))
+    pdfs = sorted(layout.docs_dir.glob("*.pdf"))
     if not pdfs:
-        raise FileNotFoundError(f"no PDFs under {layout.pdfs_dir}")
+        raise FileNotFoundError(f"no PDFs under {layout.docs_dir}")
     if limit:
-        pdfs = pdfs[:limit]
+        bank_path = bank_path or layout.bank_path
+        if not bank_path.exists():
+            raise FileNotFoundError(
+                f"--limit needs the bank to pick which docs to parse, but "
+                f"no bank at {bank_path}")
+        items = load_bank(bank_path)
+        wanted = set(docs_for_items(items[:limit]))
+        pdfs = [p for p in pdfs if p.stem in wanted]
+        if not pdfs:
+            raise FileNotFoundError(
+                f"--limit {limit} → {len(wanted)} source_files, but none of "
+                f"them are present in {layout.docs_dir} as *.pdf")
 
     instances: dict[str, ParseProvider] = {}
     for name in parsers:

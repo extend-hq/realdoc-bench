@@ -13,7 +13,7 @@ from realdoc_bench.evaluate import parse as ev_parse
 from realdoc_bench.evaluate import report as ev_report
 from realdoc_bench.evaluate import score as ev_score
 from realdoc_bench.evaluate.runs import RunLayout
-from realdoc_bench.extraction.parsers.base import (
+from realdoc_bench.evaluate.parsers.base import (
     ParseProvider,
     ParseResult,
     register_parser,
@@ -50,7 +50,7 @@ def smoke_run(tmp_path: Path) -> RunLayout:
     # Need real PDFs on disk; their content is irrelevant — stub parser ignores
     # the bytes. Write minimal PDF headers so file-extension checks survive.
     for name in ("doc_a", "doc_b"):
-        (layout.pdfs_dir / f"{name}.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
+        (layout.docs_dir / f"{name}.pdf").write_bytes(b"%PDF-1.4\n%%EOF\n")
 
     items = [
         {
