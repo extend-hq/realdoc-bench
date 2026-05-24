@@ -1,6 +1,6 @@
 """Self-hosted OSS layout VLM: PaddleOCR-VL 1.5.
 
-Adapted from ``ocr-bench/processors/paddle_ocr_vl.py``. PaddleOCR-VL doesn't
+PaddleOCR-VL doesn't
 have an OpenAI-compatible vLLM serving path, so realdoc-bench talks to a thin
 FastAPI wrapper around ``paddleocr.PaddleOCRVL`` (typically on awsl4 port
 8001, exposed via SSH tunnel).
@@ -35,7 +35,7 @@ from realdoc_bench.layout.processors.base import (
 from realdoc_bench.shared.io.cache import sha256_text
 from realdoc_bench.shared.pricing.meter import parse_cost
 
-# Mirrors ocr-bench's _PADDLE_TO_EXTEND, expressed in realdoc-bench's
+# PP-DocLayoutV3 label → LayoutBlockType, expressed in realdoc-bench's
 # LayoutBlockType vocab. Unknown labels fall back to "text".
 _PADDLE_VL_TO_LAYOUT: dict[str, LayoutBlockType] = {
     "text": "text",

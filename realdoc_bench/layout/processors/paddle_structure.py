@@ -1,6 +1,6 @@
 """Paddle PP-Structure V3 layout processor.
 
-Adapted from ``ocr-bench/processors/paddle_structure.py``. PP-Structure V3 is
+PP-Structure V3 is
 hosted as an HTTP endpoint (Ray Model Server or self-hosted equivalent on
 ``awsl4``). Configure via env:
 

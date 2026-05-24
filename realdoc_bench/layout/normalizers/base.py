@@ -1,6 +1,6 @@
 """Layout block / document data model.
 
-Cleaned and adapted from ocr-bench (``models/normalized/layout.py`` and
+(Schema cleaned and consolidated from (``models/normalized/layout.py`` and
 ``helpers/boxes.py``). The block-type vocabulary matches the realdoc-layout
 COCO categories.
 """

@@ -1,18 +1,16 @@
 """COCO-style layout evaluation with per-class F1-optimal confidence sweep.
 
-Ported from ``elrnd/src/evaluation/coco_eval.py``. Two pieces:
+Two pieces:
 
 - :func:`compute_tp_flags` — greedy by-class IoU matching at threshold 0.5.
   Sort predictions by confidence descending; each is a TP iff there is an
   unmatched GT with the same class and IoU ≥ threshold.
 - :func:`compute_best_f1_per_class` — sweep cumulatively over each class's
   (score, is_tp) tuples (sorted by descending score) to find the threshold
-  that maximizes per-class F1. Mirrors ``elrnd/src/evaluation/coco_eval.py``
-  ``_compute_best_f1_per_class`` exactly.
+  that maximizes per-class F1.
 
-This is the same methodology used to score the production ELRND
-checkpoints. Re-using it across all realdoc-bench processors keeps
-cross-provider comparisons apples-to-apples.
+A standard COCO-style evaluation, applied uniformly across all
+realdoc-bench processors so cross-provider comparisons are apples-to-apples.
 """
 
 from __future__ import annotations
@@ -65,7 +63,7 @@ def compute_tp_flags(
 ) -> list[bool]:
     """Greedy by-class IoU matcher. Returns one bool per pred.
 
-    Algorithm — identical to ``elrnd._compute_tp_flags``:
+    Algorithm:
 
     1. Sort predictions by confidence descending.
     2. For each pred (in confidence order):
@@ -116,7 +114,7 @@ def compute_best_f1_per_class(
             across the eval set, after :func:`compute_tp_flags` has run.
         gt_counts: number of GT instances per class across the eval set.
 
-    Algorithm — identical to ``elrnd._compute_best_f1_per_class``:
+    Algorithm:
 
     For each class, sort that class's predictions by confidence descending
     and cumsum TP/FP. At each step, compute P=TP/(TP+FP), R=TP/N_gt,
@@ -176,7 +174,7 @@ def _are_adjacent(
 ) -> bool:
     """True when two same-type blocks are spatially adjacent.
 
-    Ported from ``ocr-bench/metrics/layout.py:are_adjacent``: same block type
+    Same-type blocks within a small gap (under ``gap_threshold * max(page_w, page_h)``)
     and small gap (under ``gap_threshold * max(page_w, page_h)``) in the
     separating direction with overlap in the perpendicular direction.
     """
@@ -419,7 +417,7 @@ def aggregate(
         with_adjusted: also compute adjacency-merged adjusted F1 (mirrors
             the original Notion benchmark's "Adjusted F1" column).
         gap_threshold: adjacency-gap as a fraction of max page dim.
-            Default 0.02 (= ~20px on a 1000px page) matches ocr-bench.
+            Default 0.02 (= ~20px on a 1000px page).
     """
     remap = class_remap or {}
     skip = set(skip_classes)

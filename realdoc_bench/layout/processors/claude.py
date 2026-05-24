@@ -1,6 +1,6 @@
 """Cloud VLM layout processor: Anthropic Claude.
 
-Adapted from ``ocr-bench/processors/anthropic_claude.py``. The model is
+The model is
 prompted to emit a JSON structure mirroring Extend's ``ParserRun`` shape
 (chunks → blocks with ``type``, ``content``, ``bounding_box``,
 ``metadata.page``) which the :mod:`realdoc_bench.layout.normalizers.vlm_json`

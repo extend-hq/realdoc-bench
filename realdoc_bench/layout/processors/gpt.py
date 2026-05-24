@@ -1,6 +1,6 @@
 """Cloud VLM layout processor: OpenAI GPT.
 
-Adapted from ``ocr-bench/processors/openai_gpt.py``. Calls the OpenAI chat
+Calls the OpenAI chat
 completions API with an image and a layout-detection prompt; the model is
 expected to emit JSON whose shape matches Extend's ParserRun (chunks → blocks
 with ``type``, ``content``, ``bounding_box``, ``metadata.page``), parsed via
