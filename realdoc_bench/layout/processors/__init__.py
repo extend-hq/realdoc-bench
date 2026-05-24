@@ -16,11 +16,6 @@ except ImportError:
     pass
 
 try:
-    from realdoc_bench.layout.processors import elrnd_l_api  # noqa: F401
-except ImportError:
-    pass
-
-try:
     from realdoc_bench.layout.processors import claude  # noqa: F401
 except ImportError:
     pass

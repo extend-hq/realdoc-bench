@@ -14,14 +14,24 @@ import uuid
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
+from typing import Literal
 
 from realdoc_bench.layout.data.loader import LayoutSample, load
 from realdoc_bench.layout.metrics import ap as ap_metric
 from realdoc_bench.layout.metrics import structural_errors as struct
 from realdoc_bench.layout.metrics.f1 import PRF, aggregate, aggregate_per_class, evaluate, per_class
-from realdoc_bench.layout.normalizers.base import LayoutDocument
+from realdoc_bench.layout.metrics.adjacency import score_pairs
+from realdoc_bench.layout.metrics.adjacency.aggregate import MetricBreakdown
+from realdoc_bench.layout.normalizers.base import LayoutBlock, LayoutDocument
 from realdoc_bench.layout.processors.base import build as build_processor
 from realdoc_bench.shared.pricing.meter import catalog_sha
+
+# Selectable layout scorer:
+#   "f1"       — realdoc-bench's native scorer (greedy-Hungarian + strict type
+#                gate). Backwards-compatible default.
+#   "adjacency" — Hungarian 1:1 with adjacency split/merge recovery; adds
+#                  an `adjusted` metric per cell on top of the strict one.
+LayoutScorer = Literal["f1", "adjacency"]
 
 
 @dataclass
@@ -36,6 +46,9 @@ class CellResult:
     cost_estimate_usd: float | None = None
     confidence_present: bool = False
     strict: PRF | None = None
+    # Populated only by the "adjacency" scorer — F1 after adjacency split/merge
+    # recovery. ``None`` under the default "f1" scorer.
+    adjusted: PRF | None = None
     per_class: dict[str, PRF] = field(default_factory=dict)
     structural: struct.StructuralErrors | None = None
     pred_count: int = 0
@@ -51,6 +64,51 @@ class RunSummary:
     processors: list[str]
     n_pages: int
     cells: list[CellResult]
+    scorer: LayoutScorer = "f1"
+
+
+def _page_dims(*docs: LayoutDocument) -> tuple[int, int]:
+    """Largest (width, height) across every page of the given documents."""
+    w = max((p.width or 0 for d in docs for p in d.pages), default=0)
+    h = max((p.height or 0 for d in docs for p in d.pages), default=0)
+    return w, h
+
+
+def _breakdown_to_prf(bd: MetricBreakdown) -> PRF:
+    """Adapt an adjacency-scorer ``MetricBreakdown`` (micro totals) to a ``PRF``."""
+    return PRF(
+        tp=bd.tp,
+        fp=bd.fp,
+        fn=bd.fn,
+        precision=bd.micro_precision,
+        recall=bd.micro_recall,
+        f1=bd.micro_f1,
+    )
+
+
+def _score_adjacency(
+    preds: list[LayoutBlock],
+    gts: list[LayoutBlock],
+    page_dims: tuple[int, int],
+    iou_threshold: float,
+) -> tuple[PRF, dict[str, PRF], PRF]:
+    """Score one cell with the adjacency scorer — returns (strict, per_class, adjusted)."""
+    page_w, page_h = page_dims
+    result = score_pairs([(preds, gts, page_w, page_h)], iou_threshold=iou_threshold)
+    strict = _breakdown_to_prf(result.strict)
+    adjusted = _breakdown_to_prf(result.adjusted)
+    per_cls = {
+        cls: PRF(
+            tp=cs.tp,
+            fp=cs.fp,
+            fn=cs.fn,
+            precision=cs.precision,
+            recall=cs.recall,
+            f1=cs.f1,
+        )
+        for cls, cs in result.strict.per_class.items()
+    }
+    return strict, per_cls, adjusted
 
 
 def _evaluate_cell(
@@ -58,13 +116,25 @@ def _evaluate_cell(
     pred_doc: LayoutDocument,
     *,
     iou_threshold: float = 0.5,
-) -> tuple[PRF, dict[str, PRF], struct.StructuralErrors]:
+    scorer: LayoutScorer = "f1",
+) -> tuple[PRF, dict[str, PRF], struct.StructuralErrors, PRF | None]:
+    """Score a (prediction, ground-truth) cell with the selected scorer.
+
+    Returns ``(strict, per_class, structural, adjusted)``. ``adjusted`` is
+    ``None`` for the "f1" scorer and an adjacency-recovered PRF for "adjacency".
+    Structural-error analysis is scorer-independent and always computed.
+    """
     preds = pred_doc.blocks
     gts = sample.ground_truth.blocks
+    errors = struct.analyze(preds, gts, iou_threshold=iou_threshold)
+    if scorer == "adjacency":
+        strict, per_cls, adjusted = _score_adjacency(
+            preds, gts, _page_dims(sample.ground_truth, pred_doc), iou_threshold
+        )
+        return strict, per_cls, errors, adjusted
     strict = evaluate(preds, gts, iou_threshold=iou_threshold, type_sensitive=True)
     per_cls = per_class(preds, gts, iou_threshold=iou_threshold)
-    errors = struct.analyze(preds, gts, iou_threshold=iou_threshold)
-    return strict, per_cls, errors
+    return strict, per_cls, errors, None
 
 
 def run(
@@ -72,6 +142,7 @@ def run(
     processors: list[str],
     samples: Iterable[LayoutSample] | None = None,
     iou_threshold: float = 0.5,
+    scorer: LayoutScorer = "f1",
     run_id: str | None = None,
     run_dir: Path = Path("runs"),
     limit: int | None = None,
@@ -96,8 +167,8 @@ def run(
             cell_dir.mkdir(parents=True, exist_ok=True)
             try:
                 result = proc.predict(sample.image_path, gt=sample.ground_truth)
-                strict, per_cls, errors = _evaluate_cell(
-                    sample, result.document, iou_threshold=iou_threshold
+                strict, per_cls, errors, adjusted = _evaluate_cell(
+                    sample, result.document, iou_threshold=iou_threshold, scorer=scorer
                 )
                 pred_confidences = {b.confidence for b in result.document.blocks}
                 cell = CellResult(
@@ -110,6 +181,7 @@ def run(
                     cost_estimate_usd=result.cost_estimate_usd,
                     confidence_present=len(pred_confidences) > 1 or pred_confidences != {1.0},
                     strict=strict,
+                    adjusted=adjusted,
                     per_class=per_cls,
                     structural=errors,
                     pred_count=len(result.document.blocks),
@@ -139,6 +211,7 @@ def run(
         processors=[p.name for p in procs],
         n_pages=len(samples),
         cells=cells,
+        scorer=scorer,
     )
     (run_root / "summary.json").write_text(
         json.dumps(_summary_to_jsonable(summary), indent=2, default=str)
@@ -152,6 +225,7 @@ def _summary_to_jsonable(s: RunSummary) -> dict:
         "started_at": s.started_at,
         "finished_at": s.finished_at,
         "catalog_sha": s.catalog_sha,
+        "scorer": s.scorer,
         "processors": s.processors,
         "n_pages": s.n_pages,
         "cells": [_cell_to_jsonable(c) for c in s.cells],
@@ -170,6 +244,7 @@ def _cell_to_jsonable(c: CellResult) -> dict:
         "cost_estimate_usd": c.cost_estimate_usd,
         "confidence_present": c.confidence_present,
         "strict": asdict(c.strict) if c.strict else None,
+        "adjusted": asdict(c.adjusted) if c.adjusted else None,
         "per_class": {k: asdict(v) for k, v in c.per_class.items()},
         "structural": (
             {
@@ -198,6 +273,8 @@ def aggregate_summary(summary: RunSummary) -> dict[str, dict]:
         if not ok:
             continue
         strict_total = aggregate([c.strict for c in ok if c.strict is not None])
+        adjusted_cells = [c.adjusted for c in ok if c.adjusted is not None]
+        adjusted_total = aggregate(adjusted_cells) if adjusted_cells else None
         per_class_total = aggregate_per_class([c.per_class for c in ok])
         struct_total = struct.aggregate([c.structural for c in ok if c.structural is not None])
         latencies = [c.latency_sec for c in ok if c.latency_sec is not None]
@@ -208,6 +285,7 @@ def aggregate_summary(summary: RunSummary) -> dict[str, dict]:
             "n_pages": len(ok),
             "n_errors": len(cells) - len(ok),
             "strict": asdict(strict_total),
+            "adjusted": asdict(adjusted_total) if adjusted_total is not None else None,
             "per_class": {k: asdict(v) for k, v in per_class_total.items()},
             "structural": {
                 "misses": struct_total.misses,

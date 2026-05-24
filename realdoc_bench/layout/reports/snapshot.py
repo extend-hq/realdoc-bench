@@ -24,10 +24,13 @@ from realdoc_bench.shared.reporting.plots import write_pareto_plot
 
 
 def _headline_row(proc: str, agg: Mapping[str, Any]) -> dict[str, Any]:
+    adj = agg.get("adjusted") or {}
     return {
         "model": proc,
         "version": agg["version"],
         "F1": agg["strict"]["f1"],
+        # Populated only by the "adjacency" scorer (adjacency split/merge recovery).
+        "adjusted F1": adj.get("f1"),
         "precision": agg["strict"]["precision"],
         "recall": agg["strict"]["recall"],
         "$/page": agg.get("mean_cost_usd_per_page"),
@@ -75,11 +78,14 @@ def write_report(
     latency_pareto_path: Path | None = None,
 ) -> Path:
     headline = [_headline_row(proc, agg) for proc, agg in aggregates.items()]
-    headline_table = render_table(
-        headline,
-        ["model", "version", "F1", "precision", "recall", "$/page", "latency_sec/page", "mAP-ready"],
-        sort_by="F1",
-    )
+    # Only surface the adjusted-F1 column when at least one processor was scored
+    # with the "adjacency" scorer (otherwise every cell would be "—").
+    has_adjusted = any(agg.get("adjusted") for agg in aggregates.values())
+    headline_cols = ["model", "version", "F1"]
+    if has_adjusted:
+        headline_cols.append("adjusted F1")
+    headline_cols += ["precision", "recall", "$/page", "latency_sec/page", "mAP-ready"]
+    headline_table = render_table(headline, headline_cols, sort_by="F1")
 
     class_cols, class_rows = _per_class_matrix(aggregates)
     class_table = render_table(class_rows, class_cols, sort_by="block_type", descending=False)

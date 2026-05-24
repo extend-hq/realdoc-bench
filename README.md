@@ -66,12 +66,42 @@ realdoc-bench layout eval --processor gt_self --limit 5
 realdoc-bench layout report --run-id <id>
 ```
 
+### Scorer — `--scorer {f1,adjacency}`
+
+Two scorers are wired into `layout eval`; both build on a Hungarian matcher.
+
+- **`f1`** (default) — Hungarian on `1 − IoU`, IoU ≥ 0.5, wrong-type pair → FP + FN. Backwards-compatible with the legacy leaderboard.
+- **`adjacency`** — Hungarian on `1 − IoU + 0.25·type` (wrong-type pair stays TP, surfaced as `misclassifications`) with adjacency split/merge recovery; reports an additional **adjusted F1** that lets the matcher merge adjacent same-type fragments to recover from over/under-segmentation. See [`realdoc_bench/layout/metrics/adjacency/`](realdoc_bench/layout/metrics/adjacency/).
+
+```bash
+realdoc-bench layout eval -p extend_v2_0_0_beta --limit 50 --scorer adjacency
+```
+
+The adjacency scorer also has a Python API and a standalone re-score CLI:
+
+```python
+from realdoc_bench.layout.metrics.adjacency import score_pairs
+result = score_pairs(pairs, iou_threshold=0.5, gap_threshold=0.02)   # pairs := [(pred_blocks, gt_blocks, page_w, page_h), ...]
+print(result.strict.micro_f1, result.adjusted.micro_f1)
+```
+
+```bash
+python -m realdoc_bench.layout.metrics.adjacency.rescore --run-id <id> --merge-profile extended --ignore-mode exclude_matching
+```
+
+### Assumptions
+
+- **Dataset:** [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) (1,500 pages, private). Manifest in `datasets/layout/manifest.csv`; image + COCO blobs come from HF on first use (set `HF_TOKEN`, or `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` to a local snapshot).
+- **Matching:** axis-aligned IoU, threshold 0.5 (`--iou-threshold` to change). No confidence sweep — every prediction counts positive at IoU ≥ 0.5; mAP is computed separately when `confidence_present=True`.
+- **Adjusted F1 (adjacency only):** after the 1:1 match, unmatched same-type preds with gap < `0.02 × max(page_w, page_h)` are merged and re-scored; symmetric for unmatched GTs.
+- **Cost & latency:** each processor reports `cost_estimate_usd` / `latency_sec` per page when available; aggregates carry `$/page` and `latency_sec/page`, and the snapshot Pareto plots use them.
+
 ## Datasets
 
-Distributed via the [Hugging Face Hub](https://huggingface.co/extend-ai) under the `extend-ai` org. Private during development; gated by a one-time legal review for the public sets.
+Distributed via the [Hugging Face Hub](https://huggingface.co/Extend-AI) under the `Extend-AI` org. Private during development; gated by a one-time legal review for the public sets.
 
-- `extend-ai/realdoc-layout` — 1,500-page layout benchmark with COCO annotations.
-- `extend-ai/realdoc-bench-qa` — QA-extraction bench (TBD; what `evaluate download` pulls).
+- [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) — 1,500-page layout benchmark with COCO annotations.
+- `Extend-AI/realdoc-bench-qa` — QA-extraction bench (TBD; what `evaluate download` pulls).
 
 The list of pages and per-page metadata for the layout set ships in `datasets/layout/manifest.csv`; image and annotation blobs live on HF.
 

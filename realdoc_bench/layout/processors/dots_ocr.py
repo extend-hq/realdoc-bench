@@ -1,6 +1,6 @@
 """Self-hosted OSS layout VLM: rednote-hilab/dots.mocr 1.5.
 
-Adapted from ``ocr-bench/processors/dots_ocr.py``. Hits a vLLM
+Hits a vLLM
 OpenAI-compatible endpoint (typically `vllm serve rednote-hilab/dots.mocr`
 on awsl4 port 8000, exposed via SSH tunnel).
 

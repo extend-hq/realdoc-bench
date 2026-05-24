@@ -1,6 +1,6 @@
 """Hungarian-IoU block matcher.
 
-Adapted from ``ocr-bench/metrics/layout.py``. Type-sensitive matching adds a
+Type-sensitive matching adds a
 penalty (0.25) to cross-type pairings; we still allow them at high IoU so
 misclassifications surface as matched-but-wrong-type rather than disappearing
 as unmatched FP/FN pairs (see :mod:`realdoc_bench.layout.metrics.structural_errors`).

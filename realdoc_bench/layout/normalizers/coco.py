@@ -1,6 +1,6 @@
 """COCO ground-truth normalizer for the realdoc-layout dataset.
 
-Adapted from ``ocr-bench/models/chunkr_human/model.py``. Two-step category mapping
+Two-step category mapping
 folded into one dict: raw 23-class annotations → 18-class realdoc-layout vocabulary.
 """
 

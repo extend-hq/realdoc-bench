@@ -65,24 +65,40 @@ def layout_eval(
     domain: list[str] | None = typer.Option(None, "--domain"),
     run_id: str | None = typer.Option(None, "--run-id"),
     run_dir: Path = typer.Option(Path("runs"), "--run-dir"),
+    scorer: str = typer.Option(
+        "f1",
+        "--scorer",
+        help=(
+            "Layout F1 scorer. 'f1' (default) = realdoc-bench's native greedy-"
+            "Hungarian + strict type-gate scorer. 'adjacency' = Hungarian 1:1 "
+            "with adjacency split/merge recovery, which also produces an "
+            "'adjusted' F1 per processor."
+        ),
+    ),
 ) -> None:
     del dataset
+    if scorer not in ("f1", "adjacency"):
+        raise typer.BadParameter(f"--scorer must be 'f1' or 'adjacency', got {scorer!r}")
     summary = layout_run(
         processors=processor, limit=limit, splits=split, domains=domain,
+        scorer=scorer,  # type: ignore[arg-type]
         run_id=run_id, run_dir=run_dir,
     )
-    console.print(f"run_id = [bold]{summary.run_id}[/bold]")
+    console.print(f"run_id = [bold]{summary.run_id}[/bold]  scorer = [bold]{scorer}[/bold]")
     aggregates = layout_aggregate(summary)
-    table = Table(title="Layout results")
+    table = Table(title=f"Layout results ({scorer})")
     table.add_column("processor"); table.add_column("F1")
+    if scorer == "adjacency": table.add_column("adjusted F1")
     table.add_column("$/page"); table.add_column("latency_s/page")
     for proc, agg in sorted(aggregates.items(),
                             key=lambda kv: kv[1]["strict"]["f1"], reverse=True):
-        table.add_row(
-            proc, f"{agg['strict']['f1']:.3f}",
-            f"{agg['mean_cost_usd_per_page']:.4f}" if agg["mean_cost_usd_per_page"] is not None else "—",
-            f"{agg['mean_latency_sec']:.2f}" if agg["mean_latency_sec"] is not None else "—",
-        )
+        row = [proc, f"{agg['strict']['f1']:.3f}"]
+        if scorer == "adjacency":
+            adj = agg.get("adjusted")
+            row.append(f"{adj['f1']:.3f}" if adj else "—")
+        row.append(f"{agg['mean_cost_usd_per_page']:.4f}" if agg["mean_cost_usd_per_page"] is not None else "—")
+        row.append(f"{agg['mean_latency_sec']:.2f}" if agg["mean_latency_sec"] is not None else "—")
+        table.add_row(*row)
     console.print(table)
 
 
@@ -109,6 +125,7 @@ def layout_report(
         cells: list[CellResult] = []
         for c in summary["cells"]:
             strict = PRF(**c["strict"]) if c.get("strict") else None
+            adjusted = PRF(**c["adjusted"]) if c.get("adjusted") else None
             per_cls = {k: PRF(**v) for k, v in (c.get("per_class") or {}).items()}
             s = c.get("structural")
             if s:
@@ -125,7 +142,7 @@ def layout_report(
                     version=c["version"], status=c["status"], error=c.get("error"),
                     latency_sec=c.get("latency_sec"), cost_estimate_usd=c.get("cost_estimate_usd"),
                     confidence_present=c.get("confidence_present", False),
-                    strict=strict, per_class=per_cls, structural=errors,
+                    strict=strict, adjusted=adjusted, per_class=per_cls, structural=errors,
                     pred_count=c.get("pred_count", 0), gt_count=c.get("gt_count", 0),
                 )
             )
@@ -133,6 +150,7 @@ def layout_report(
             run_id=summary["run_id"], started_at=summary["started_at"],
             finished_at=summary["finished_at"], catalog_sha=summary["catalog_sha"],
             processors=summary["processors"], n_pages=summary["n_pages"], cells=cells,
+            scorer=summary.get("scorer", "f1"),
         )
         aggregates = aggregate_summary(run_summary)
 

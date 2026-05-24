@@ -1,9 +1,9 @@
 """realdoc-layout dataset loader.
 
 Resolves the manifest CSV from the repo, the image + COCO blobs from the HF
-dataset (``extend-ai/realdoc-layout``), and yields validated samples joining
-the two. HF is private by default; ``HF_TOKEN`` (or ``huggingface-cli login``)
-is required.
+dataset (``Extend-AI/RealDocBench-Layout``), and yields validated samples
+joining the two. HF is private by default; ``HF_TOKEN`` (or
+``huggingface-cli login``) is required.
 """
 
 from __future__ import annotations
@@ -20,7 +20,7 @@ from realdoc_bench.layout.normalizers.base import LayoutDocument
 from realdoc_bench.layout.normalizers.coco import normalize_coco
 from realdoc_bench.shared.io.hf import fetch_dataset
 
-DEFAULT_HF_DATASET = "extend-ai/realdoc-layout"
+DEFAULT_HF_DATASET = "Extend-AI/RealDocBench-Layout"
 DEFAULT_MANIFEST = Path(__file__).resolve().parents[3] / "datasets" / "layout" / "manifest.csv"
 
 

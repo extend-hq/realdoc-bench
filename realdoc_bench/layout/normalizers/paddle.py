@@ -1,6 +1,6 @@
 """Paddle PP-Structure V3 response → LayoutDocument.
 
-Adapted from ``ocr-bench/models/paddle_structure/model.py:normalize_layout``.
+
 PP-Structure V3 emits a single page with a flat ``parsing_res_list`` of blocks
 labelled by ``block_label`` and bounded by ``block_bbox`` (LTRB).
 """

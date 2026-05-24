@@ -1,6 +1,6 @@
 """Extend SDK response → LayoutDocument.
 
-Ported from ``ocr-bench/models/extend/model.py:to_layout_document``. Propagates
+Propagates
 per-block confidence when the production response carries it (falls back to 1.0
 when absent — needed for mAP). No post-hoc filtering by confidence; Extend's
 pipeline applies whatever cutoffs it considers production-correct.

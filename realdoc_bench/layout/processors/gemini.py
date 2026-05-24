@@ -1,6 +1,6 @@
 """Cloud VLM layout processor: Google Gemini.
 
-Adapted from ``ocr-bench/processors/gemini.py``. Uses ``google.genai`` to
+Uses ``google.genai`` to
 prompt a Gemini model for a JSON layout decomposition, then normalizes via
 :mod:`realdoc_bench.layout.normalizers.vlm_json`.
 
