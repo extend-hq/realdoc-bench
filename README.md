@@ -19,29 +19,29 @@ The full pipeline is download → parse → score → report. Every stage is per
 
 ```bash
 # 1. Pull the bench dataset (qa_bank.json + docs/) from the HF Hub
-realdoc-bench evaluate download --run-dir runs/v6 --dataset Extend-AI/Realdoc-Bench
+realdoc-bench evaluate download --run-dir runs/qa --dataset Extend-AI/Realdoc-Bench
 
 # 2. Parse every PDF with one or more parsers (idempotent; --force to re-parse)
-realdoc-bench evaluate parse --run-dir runs/v6 -p reducto -p aws_textract -p azure_di
+realdoc-bench evaluate parse --run-dir runs/qa -p reducto -p aws_textract -p azure_di
 
 # 3. Score every (question × parser) pair with Gemini deep_equal
 #    No -p means: score every parser found under <run-dir>/parses/
-realdoc-bench evaluate score --run-dir runs/v6
+realdoc-bench evaluate score --run-dir runs/qa
 
 # 4. Build the dashboard
-realdoc-bench evaluate report --run-dir runs/v6
+realdoc-bench evaluate report --run-dir runs/qa
 ```
 
 Or all at once for a known parser set:
 
 ```bash
-realdoc-bench evaluate run --run-dir runs/v6 -p reducto -p aws_textract
+realdoc-bench evaluate run --run-dir runs/qa -p reducto -p aws_textract
 ```
 
 **Run-dir layout**:
 
 ```
-runs/v6/
+runs/qa/
   docs/                          # input — documents (PDFs)
   qa_bank.json                   # input — typed-template QA bank
   parses/<parser>/<stem>.md      # parser output (+ <stem>.json meta)
@@ -61,10 +61,14 @@ runs/v6/
 ## Layout benchmark — `layout`
 
 ```bash
-realdoc-bench layout list
-realdoc-bench layout eval --processor gt_self --limit 5
+# 1. Run one or more processors over the layout dataset and score every page
+realdoc-bench layout eval --dataset Extend-AI/RealDocBench-Layout --processor gt_self --limit 5
+
+# 2. Build the markdown + Pareto-plot report from a previous run
 realdoc-bench layout report --run-id <id>
 ```
+
+`--dataset` defaults to `Extend-AI/RealDocBench-Layout` and can be omitted; pass a different HF repo id to point at another snapshot. Set `HF_TOKEN` for private repos.
 
 ### Scorer — `--scorer {f1,adjacency}`
 
@@ -91,7 +95,7 @@ python -m realdoc_bench.layout.metrics.adjacency.rescore --run-id <id> --merge-p
 
 ### Assumptions
 
-- **Dataset:** [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) (1,500 pages, private). Manifest in `datasets/layout/manifest.csv`; image + COCO blobs come from HF on first use (set `HF_TOKEN`, or `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` to a local snapshot).
+- **Dataset:** [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) (1,500 pages, private) by default; override with `--dataset <repo-id>`. Manifest in `datasets/layout/manifest.csv`; image + COCO blobs come from HF on first use (set `HF_TOKEN`, or `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` to a local snapshot).
 - **Matching:** axis-aligned IoU, threshold 0.5 (`--iou-threshold` to change). No confidence sweep — every prediction counts positive at IoU ≥ 0.5; mAP is computed separately when `confidence_present=True`.
 - **Adjusted F1 (adjacency only):** after the 1:1 match, unmatched same-type preds with gap < `0.02 × max(page_w, page_h)` are merged and re-scored; symmetric for unmatched GTs.
 - **Cost & latency:** each processor reports `cost_estimate_usd` / `latency_sec` per page when available; aggregates carry `$/page` and `latency_sec/page`, and the snapshot Pareto plots use them.
