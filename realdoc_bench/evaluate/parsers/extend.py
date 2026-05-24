@@ -12,7 +12,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from realdoc_bench.extraction.parsers.base import (
+from realdoc_bench.evaluate.parsers.base import (
     ParseProvider,
     ParseResult,
     register_parser,
@@ -24,12 +24,7 @@ _PROD_URL = "https://api.extend.ai"
 
 
 def _base_url() -> str:
-    """Always hit prod unless EXTEND_BASE_URL is set explicitly.
-
-    Public benchmark numbers must be reproducible against the same endpoint
-    customers see; routing test keys to staging used to surface different
-    parser behavior than what real users get.
-    """
+    """Always hit prod unless EXTEND_BASE_URL is set explicitly."""
     return os.environ.get("EXTEND_BASE_URL") or _PROD_URL
 
 
@@ -237,11 +232,8 @@ _PERFORMANCE_V2_CONFIG_EXTRA = {
 
 
 @register_parser("extend_performance_v2_0_0", version="2.0.0")
-class ExtendPerformanceV2GA(_ExtendParserBase):
-    """Performance v2.0.0 — GA release of the new pipeline.
-
-    Same config as the beta; the only difference is ``engine_version`` (no
-    ``-beta`` suffix), which routes to the GA build at the Extend API.
+class ExtendPerformanceV2(_ExtendParserBase):
+    """Performance v2.0.0 — release of the new pipeline.
     """
 
     engine = "parse_performance"
@@ -249,13 +241,6 @@ class ExtendPerformanceV2GA(_ExtendParserBase):
     config_extra = _PERFORMANCE_V2_CONFIG_EXTRA
 
 
-@register_parser("extend_performance_v2_0_0_beta", version="2.0.0-beta")
-class ExtendPerformanceV2Beta(_ExtendParserBase):
-    """Performance v2.0.0-beta — pre-GA build of the new pipeline."""
-
-    engine = "parse_performance"
-    engine_version = "2.0.0-beta"
-    config_extra = _PERFORMANCE_V2_CONFIG_EXTRA
 
 
 # Full advanced config: every v2.0.0+ block option ON except agentic (deferred).
@@ -272,7 +257,6 @@ _PERFORMANCE_V2_ADVANCED_CONFIG_EXTRA = {
             "enabled": True,
             "targetFormat": "markdown",
             "tableHeaderContinuationEnabled": True,   # propagate headers across page breaks
-            "cellBlocksEnabled": True,                # per-cell row/col indices (v2.0.0+)
         },
         "text": {
             "enabled": True,
@@ -327,7 +311,6 @@ _PERFORMANCE_V2_AGENTIC_CONFIG_EXTRA = {
             "enabled": True,
             "targetFormat": "markdown",
             "tableHeaderContinuationEnabled": True,
-            "cellBlocksEnabled": True,
             "agentic": {"enabled": True},          # agentic tables — VLM review/correction
         },
         "text": {
@@ -370,12 +353,9 @@ class ExtendPerformanceV2Blocks(_ExtendParserBase):
 
     Same API call as ``extend_performance_v2_0_0`` (engine_version="2.0.0"),
     but we walk ``chunk.blocks[]`` ourselves to emit markdown that:
-      - upgrades ``section_heading`` to ``## `` (server uses ``### ``)
+      - upgrades ``section_heading`` to ``## ``
       - skips ``page_number`` / ``footer`` / ``header`` blocks (server emits as plain text → noise)
       - renders ``key_value`` blocks as ``**key:** value``
-
-    A/B candidate against the canonical v2.0.0 GA parser. If it doesn't move
-    the F1 needle, we drop it; if it does, this becomes the new default.
     """
 
     engine = "parse_performance"
@@ -427,17 +407,3 @@ class ExtendLightV1(_ExtendParserBase):
         "advancedOptions": {"pageRotationEnabled": True},
     }
 
-
-@register_parser("extend_light_v0_0_2_beta", version="0.0.2-beta")
-class ExtendLightV002(_ExtendParserBase):
-    engine = "parse_light"
-    engine_version = "0.0.2-beta"
-    config_extra = {
-        "chunkingStrategy": {"type": "page"},
-        "blockOptions": {
-            "figures": {"enabled": True, "figureImageClippingEnabled": True},
-            "tables": {"enabled": True, "targetFormat": "html"},
-            "text": {"enabled": True, "styleFormattingEnabled": False},
-        },
-        "advancedOptions": {"pageRotationEnabled": True},
-    }
