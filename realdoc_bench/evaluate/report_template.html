@@ -3,58 +3,177 @@
 <title>realdoc-bench — QA evaluation</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1"></script>
 <style>
+/* ── tokens ─────────────────────────────────────────────────────────────── */
+:root {
+  --bg: #f5f7fa;
+  --card: #ffffff;
+  --ink: #1a1f2e;
+  --ink-2: #4a5568;
+  --ink-3: #768295;
+  --border: #e4e8ef;
+  --border-2: #eef1f5;
+  --accent: #3b82f6;
+  --accent-2: #1e40af;
+  --gold-bg: #eef4ff;
+  --gold-ink: #1e3a8a;
+  --ok-bg: #ecfdf5;
+  --ok-ink: #047857;
+  --ok-border: #6ee7b7;
+  --no-bg: #fef2f2;
+  --no-ink: #b91c1c;
+  --no-border: #fca5a5;
+  /* sequential heatmap (red → green) */
+  --hm-1: #fee2e2;  /* <70 */
+  --hm-2: #fed7aa;  /* 70-75 */
+  --hm-3: #fef3c7;  /* 75-80 */
+  --hm-4: #fef9c3;  /* 80-85 */
+  --hm-5: #ecfccb;  /* 85-90 */
+  --hm-6: #bbf7d0;  /* 90-95 */
+  --hm-7: #86efac;  /* ≥95 */
+}
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
-background:#f4f6f9;color:#1f2933;line-height:1.5}
-.wrap{max-width:1340px;margin:0 auto;padding:26px}
-header h1{font-size:23px;font-weight:720}
-header h1 .a{color:#2563eb}
-header .sub{color:#69727d;font-size:13.5px;margin-top:4px}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
-gap:14px;margin:20px 0}
-.kpi{background:#fff;border:1px solid #e5e9ef;border-radius:11px;padding:16px 18px;
-box-shadow:0 1px 3px rgba(20,30,50,.05)}
-.kpi .l{font-size:11.5px;color:#69727d;text-transform:uppercase;letter-spacing:.6px}
-.kpi .v{font-size:27px;font-weight:730;margin-top:5px}
-.kpi .v.hl{color:#2563eb}
-.panel{background:#fff;border:1px solid #e5e9ef;border-radius:11px;padding:20px 22px;
-margin-bottom:18px;box-shadow:0 1px 3px rgba(20,30,50,.05)}
-.panel h2{font-size:14px;font-weight:680;margin-bottom:4px}
-.panel .note{font-size:12px;color:#69727d;margin-bottom:14px}
-.chartbox{height:300px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+     background:var(--bg);color:var(--ink);line-height:1.55;font-size:13px}
+.wrap{max-width:1500px;margin:0 auto;padding:28px 24px}
+
+/* ── header ─────────────────────────────────────────────────────────────── */
+header h1{font-size:23px;font-weight:740;letter-spacing:-0.01em}
+header h1 .a{color:var(--accent)}
+header .sub{color:var(--ink-3);font-size:13.5px;margin-top:5px}
+
+/* ── KPI tiles ──────────────────────────────────────────────────────────── */
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+      gap:14px;margin:22px 0 8px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;
+     padding:16px 18px;box-shadow:0 1px 2px rgba(20,30,50,.04)}
+.kpi .l{font-size:11px;color:var(--ink-3);text-transform:uppercase;
+        letter-spacing:.06em;font-weight:600}
+.kpi .v{font-size:28px;font-weight:730;margin-top:6px;letter-spacing:-0.02em}
+.kpi .v.hl{color:var(--accent)}
+
+/* ── tabs ───────────────────────────────────────────────────────────────── */
+.tabs{display:flex;gap:2px;border-bottom:2px solid var(--border);
+      margin:24px 0 18px;flex-wrap:wrap}
+.tabs button{background:none;border:none;padding:10px 16px;cursor:pointer;
+             font-size:13px;font-weight:600;color:var(--ink-2);
+             border-bottom:3px solid transparent;margin-bottom:-2px;
+             font-family:inherit;transition:color .12s}
+.tabs button:hover{color:var(--ink)}
+.tabs button.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab{display:none}
+.tab.on{display:block}
+
+/* ── panel ──────────────────────────────────────────────────────────────── */
+.panel{background:var(--card);border:1px solid var(--border);border-radius:12px;
+       padding:20px 24px;margin-bottom:18px;box-shadow:0 1px 2px rgba(20,30,50,.04)}
+.panel h2{font-size:14.5px;font-weight:680;margin-bottom:4px;letter-spacing:-0.005em}
+.panel .note{font-size:12px;color:var(--ink-3);margin-bottom:14px;max-width:920px}
+
+/* ── charts ─────────────────────────────────────────────────────────────── */
+.chartbox{height:320px}
 .charts2{display:grid;grid-template-columns:1fr 1fr;gap:22px}
 .chartsdom{display:grid;grid-template-columns:repeat(auto-fit,minmax(400px,1fr));gap:22px}
-.chartcell h3{font-size:12px;font-weight:680;color:#3b46c4;margin-bottom:8px;
-text-align:center;text-transform:capitalize}
-@media(max-width:800px){.charts2{grid-template-columns:1fr}}
-.bar{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:13px}
-.bar .nm{width:160px;flex:none;font-weight:600}
-.bar .tk{flex:1;background:#eef1f5;border-radius:6px;height:22px;overflow:hidden}
-.bar .fl{height:100%;border-radius:6px}
-.bar .pc{width:140px;flex:none;text-align:right;color:#69727d;font-variant-numeric:tabular-nums}
+.chartcell h3{font-size:11.5px;font-weight:680;color:var(--accent-2);margin-bottom:10px;
+              text-align:center;text-transform:capitalize;letter-spacing:.02em}
+@media(max-width:900px){.charts2{grid-template-columns:1fr}}
+
+/* ── leaderboard bars ───────────────────────────────────────────────────── */
+.bar{display:flex;align-items:center;gap:10px;margin:8px 0;font-size:13px}
+.bar .nm{width:180px;flex:none;font-weight:600}
+.bar .tk{flex:1;background:var(--border-2);border-radius:6px;height:22px;overflow:hidden}
+.bar .fl{height:100%;border-radius:6px;transition:width .3s ease}
+.bar .pc{width:150px;flex:none;text-align:right;color:var(--ink-3);
+         font-variant-numeric:tabular-nums;font-size:12px}
+
+/* ── matrices (per-domain, per-bucket heatmaps) ────────────────────────── */
+.matrix{border-collapse:collapse;width:100%;font-size:12px}
+.matrix th,.matrix td{padding:10px 12px;border:1px solid var(--border-2);
+                       text-align:center;font-variant-numeric:tabular-nums}
+.matrix th{background:#fafbfc;color:var(--ink-3);font-weight:600;font-size:10.5px;
+            text-transform:uppercase;letter-spacing:.05em}
+.matrix th a{color:var(--accent);text-decoration:none;cursor:pointer}
+.matrix th a:hover{text-decoration:underline}
+.matrix td.parser{text-align:left;font-weight:600;background:#fafbfc;white-space:nowrap;
+                  color:var(--ink)}
+.matrix td.cell{font-weight:600;cursor:default}
+.matrix td.cell .pct{font-size:13.5px;color:var(--ink)}
+.matrix td.cell .frac{display:block;font-size:9.5px;color:var(--ink-3);
+                       font-weight:400;margin-top:3px;font-family:ui-monospace,Menlo,monospace}
+
+/* ── bucket detail ──────────────────────────────────────────────────────── */
+.bucket-header{background:linear-gradient(135deg,#1a1f2e 0%,#2d3548 100%);
+               color:#fff;padding:18px 24px;margin:0 0 16px;border-radius:12px;
+               box-shadow:0 4px 12px rgba(20,30,50,.12)}
+.bucket-header h3{font-size:19px;font-weight:710;letter-spacing:-0.01em}
+.bucket-header .desc{font-size:13px;color:#cbd5e1;margin-top:4px}
+.bucket-header .meta{font-size:11px;color:#94a3b8;margin-top:8px;
+                      font-family:ui-monospace,Menlo,monospace}
+
+.qcard{background:var(--card);border:1px solid var(--border);border-radius:12px;
+        padding:18px 22px;margin-bottom:14px;box-shadow:0 1px 2px rgba(20,30,50,.04)}
+.qcard .qhead{display:flex;justify-content:space-between;align-items:flex-start;
+              gap:12px;margin-bottom:8px}
+.qcard .qt{font-size:13.5px;font-weight:640;flex:1;color:var(--ink)}
+.qcard .qmeta{font-size:10.5px;color:var(--ink-3);font-family:ui-monospace,Menlo,monospace;
+              text-align:right;white-space:nowrap;line-height:1.5}
+.qcard .qmeta .qid{color:#9ca3af;font-size:9.5px}
+.qcard .caps{margin:6px 0 12px;display:flex;gap:5px;flex-wrap:wrap}
+.qcard .caps span{font-size:9.5px;background:#eef2ff;color:#3b46c4;padding:2px 7px;
+                  border-radius:4px;font-weight:600}
+.qcard .gold-row{background:var(--gold-bg);padding:9px 13px;border-radius:7px;
+                  margin-bottom:10px;font-family:ui-monospace,Menlo,monospace;
+                  font-size:11px;color:var(--gold-ink);font-weight:600;
+                  word-break:break-word;border-left:3px solid var(--accent)}
+.qcard .gold-row::before{content:'GOLD';background:var(--accent-2);color:#fff;
+                          padding:1px 7px;border-radius:3px;font-weight:700;
+                          margin-right:9px;font-size:9px;letter-spacing:.03em;
+                          font-family:-apple-system,sans-serif}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:6px}
+.pcell{border:1px solid var(--border);border-radius:7px;padding:9px 11px;
+        background:#fafbfc;display:flex;flex-direction:column;gap:5px;
+        font-size:11px;min-height:78px}
+.pcell.ok{border-color:var(--ok-border);background:var(--ok-bg)}
+.pcell.no{border-color:var(--no-border);background:var(--no-bg)}
+.pcell .ph{display:flex;align-items:center;gap:6px;font-size:10px;
+            color:var(--ink-3);font-weight:600}
+.pcell .ph .pdot{width:9px;height:9px;border-radius:50%;flex:none}
+.pcell .ph .ok-mark{font-weight:700;font-size:12px;margin-left:auto}
+.pcell .ph .ok-mark.y{color:var(--ok-ink)}
+.pcell .ph .ok-mark.n{color:var(--no-ink)}
+.pcell .ans{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;
+             color:var(--ink);word-break:break-word;max-height:88px;
+             overflow-y:auto;line-height:1.45}
+
+/* ── filters + question browser ─────────────────────────────────────────── */
 .filters{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
-.filters input,.filters select{border:1px solid #d3d9e2;border-radius:8px;
-padding:7px 10px;font-size:13px;font-family:inherit}
+.filters input,.filters select{border:1px solid #d4dae3;border-radius:8px;
+                                 padding:7px 11px;font-size:13px;
+                                 font-family:inherit;background:#fff;
+                                 color:var(--ink)}
 .filters input{flex:1;min-width:200px;max-width:380px}
-.filters .ct{margin-left:auto;color:#69727d;font-size:12.5px}
-.q{border:1px solid #e5e9ef;border-radius:11px;margin-bottom:13px;overflow:hidden}
-.q-head{padding:12px 15px;background:#fbfcfd;border-bottom:1px solid #eef1f5}
-.q-head .qt{font-size:13.5px;font-weight:600}
-.q-head .meta{font-size:11.5px;color:#69727d;margin-top:4px}
-.q-head .sec{display:inline-block;background:#eef2ff;color:#3b46c4;border-radius:5px;
-padding:1px 7px;font-weight:600;margin-right:6px}
+.filters .ct{margin-left:auto;color:var(--ink-3);font-size:12px}
+.q{border:1px solid var(--border);border-radius:11px;margin-bottom:13px;
+   overflow:hidden;background:#fff}
+.q-head{padding:13px 16px;background:#fafbfc;border-bottom:1px solid var(--border-2)}
+.q-head .qt{font-size:13.5px;font-weight:640}
+.q-head .meta{font-size:11.5px;color:var(--ink-3);margin-top:4px}
+.q-head .sec{display:inline-block;background:#eef2ff;color:#3b46c4;
+              border-radius:5px;padding:2px 8px;font-weight:600;margin-right:6px}
 .q-body{overflow-x:auto}
 table.qa{border-collapse:collapse;width:100%;font-size:11.5px}
-.qa th,.qa td{border:1px solid #eef1f5;padding:6px 9px;text-align:left;vertical-align:top}
-.qa th{background:#f7f8fa;color:#69727d;font-weight:600;white-space:nowrap;
-font-size:10.5px;text-transform:uppercase;letter-spacing:.4px}
-td.fld{font-weight:600;white-space:nowrap;background:#fbfcfd}
-td.gold{background:#eff6ff;font-weight:600;font-family:ui-monospace,Menlo,monospace}
+.qa th,.qa td{border:1px solid var(--border-2);padding:7px 10px;
+               text-align:left;vertical-align:top}
+.qa th{background:#fafbfc;color:var(--ink-3);font-weight:600;white-space:nowrap;
+        font-size:10.5px;text-transform:uppercase;letter-spacing:.04em}
+td.fld{font-weight:600;white-space:nowrap;background:#fafbfc}
+td.gold{background:var(--gold-bg);font-weight:600;font-family:ui-monospace,Menlo,monospace;
+         color:var(--gold-ink)}
 td.cell{font-family:ui-monospace,Menlo,monospace}
-td.ok{background:#e9f9ee;color:#0f7a35}
-td.no{background:#fdecec;color:#c0362c}
+td.ok{background:var(--ok-bg);color:var(--ok-ink)}
+td.no{background:var(--no-bg);color:var(--no-ink)}
 td.na{color:#aab2bd}
-footer{color:#8a929c;font-size:11.5px;text-align:center;padding:10px 0 30px}
+
+footer{color:#9aa3b3;font-size:11.5px;text-align:center;padding:14px 0 32px}
 </style></head><body><div class=wrap>
 
 <header>
@@ -71,105 +190,259 @@ footer{color:#8a929c;font-size:11.5px;text-align:center;padding:10px 0 30px}
   <div class=kpi><div class=l>Eval calls</div><div class=v>{N_CALLS}</div></div>
 </div>
 
-<div class=panel>
-  <h2>Per-parser accuracy</h2>
-  <div class=note>Per-field — each key in a multi-key question scored
-  independently. Per-question — all keys in a question correct.</div>
-  <div class=charts2>
-    <div class=chartcell><h3>Per-field accuracy</h3>
-      <div class=chartbox><canvas id=chartField></canvas></div></div>
-    <div class=chartcell><h3>Per-question accuracy</h3>
-      <div class=chartbox><canvas id=chartQuestion></canvas></div></div>
+<div class=tabs id=tabbar></div>
+
+<!-- ── OVERALL TAB ─────────────────────────────────────────────────────── -->
+<div id=tab-overall class="tab on">
+  <div class=panel>
+    <h2>Per-parser accuracy</h2>
+    <div class=note>Per-field — each key in a multi-key question scored independently. Per-question — all keys in a question correct.</div>
+    <div class=charts2>
+      <div class=chartcell><h3>Per-field accuracy</h3>
+        <div class=chartbox><canvas id=chartField></canvas></div></div>
+      <div class=chartcell><h3>Per-question accuracy</h3>
+        <div class=chartbox><canvas id=chartQuestion></canvas></div></div>
+    </div>
+    <div id=bars style="margin-top:20px"></div>
   </div>
-  <div id=bars style="margin-top:18px"></div>
+
+  <div class=panel>
+    <h2>Per-domain accuracy (per-field)</h2>
+    <div class=note>How each parser does across document domains — one chart per domain.</div>
+    <div class=chartsdom id=domcharts></div>
+  </div>
 </div>
 
-<div class=panel>
-  <h2>Per-domain accuracy (per-field)</h2>
-  <div class=note>How each parser does across document domains —
-  one chart per domain, parsers ordered by overall rank.</div>
-  <div class=chartsdom id=domcharts></div>
+<!-- ── CAPABILITIES OVERVIEW ───────────────────────────────────────────── -->
+<div id=tab-capabilities class=tab>
+  <div class=panel>
+    <h2>Per-capability heatmap</h2>
+    <div class=note>Each cell = per-field accuracy on questions tagged with that capability. Click a column header to drill into that bucket's examples.</div>
+    <table class=matrix id=bucket-matrix></table>
+  </div>
 </div>
 
-<div class=panel>
-  <h2>Questions &amp; extractions</h2>
-  <div class=note>Each question's typed gold vs what every parser pulled from
-  its markdown. Green = correct field, red = wrong. Hardest questions first.</div>
-  <div class=filters>
-    <input id=search placeholder="search question / document…">
-    <select id=fdomain><option value="">all domains</option></select>
-    <select id=fparser><option value="">highlight: none</option></select>
-    <label style="font-size:12.5px;color:#69727d">
-      <input type=checkbox id=fonlywrong> only questions with a miss</label>
-    <span class=ct id=count></span>
+<!-- ── PER-BUCKET TABS get injected here by JS ─────────────────────────── -->
+<div id=bucket-tabs></div>
+
+<!-- ── QUESTION BROWSER ────────────────────────────────────────────────── -->
+<div id=tab-questions class=tab>
+  <div class=panel>
+    <h2>Questions &amp; extractions</h2>
+    <div class=note>Each question's typed gold vs what every parser pulled from its markdown. Green = correct field, red = wrong. Hardest questions first.</div>
+    <div class=filters>
+      <input id=search placeholder="search question / document…">
+      <select id=fdomain><option value="">all domains</option></select>
+      <select id=fparser><option value="">highlight: none</option></select>
+      <label style="font-size:12.5px;color:var(--ink-3)">
+        <input type=checkbox id=fonlywrong> only questions with a miss</label>
+      <span class=ct id=count></span>
+    </div>
+    <div id=qlist></div>
   </div>
-  <div id=qlist></div>
 </div>
 
 <footer>realdoc-bench · generated from {RUN_DIR}</footer>
 </div>
+
 <script>
 const DATA = /*DATA*/;
 const PK = DATA.parsers.map(p=>p[0]), PLAB = Object.fromEntries(DATA.parsers);
-const COLORS = {extend_performance_v2_0_0_advanced:'#2563eb',
-  extend_light_v1_0_0:'#0d9488', extend_performance_v1_0_0:'#60a5fa'};
-const esc=s=>(s==null?'':String(s)).replace(/[&<>"]/g,c=>(
+const COLORS = DATA.parser_colors || {};
+const FALLBACK_COLOR = '#94a3b8';
+const col = k => COLORS[k] || FALLBACK_COLOR;
+const esc = s => (s==null?'':String(s)).replace(/[&<>"]/g,c=>(
   {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const fmt=v=>v===null?'null':typeof v==='string'?v:JSON.stringify(v);
+const fmt = v => v===null||v===undefined ? 'null' : (typeof v==='string' ? v : JSON.stringify(v));
+const slug = s => s.toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
 
-const sum=DATA.summary;
-const mkBar=(id,vals,suffix)=>new Chart(document.getElementById(id),{type:'bar',
-  data:{labels:sum.map(s=>s.label),datasets:[{data:vals,
-    backgroundColor:sum.map(s=>COLORS[s.key]||'#94a3b8'),borderRadius:5}]},
-  options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-    scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}},
-    plugins:{legend:{display:false},
-      tooltip:{callbacks:{label:c=>c.parsed.x+suffix}}}}});
-mkBar('chartField',sum.map(s=>s.field_pct),'% per-field');
-mkBar('chartQuestion',sum.map(s=>s.q_pct),'% per-question');
+// ── tabs ─────────────────────────────────────────────────────────────────
+const TABS = [
+  {id: 'overall', label: 'Overall'},
+  {id: 'capabilities', label: 'Capabilities'},
+];
+DATA.buckets.forEach(b => TABS.push({id: 'bucket_' + slug(b.name), label: b.name}));
+TABS.push({id: 'questions', label: 'Questions'});
 
-document.getElementById('bars').innerHTML=sum.map(s=>{
-  const c=COLORS[s.key]||'#94a3b8';
-  return `<div class=bar><div class=nm>${esc(s.label)}</div>
-  <div class=tk><div class=fl style="width:${s.field_pct}%;background:${c}"></div></div>
-  <div class=pc>${s.field_pct}% &middot; ${s.q_pct}% q</div></div>`;}).join('');
-
-const dcWrap=document.getElementById('domcharts');
-const ord=sum.map(s=>s.key);
-DATA.domains.forEach(d=>{
-  const cell=document.createElement('div');
-  cell.className='chartcell';
-  cell.innerHTML=`<h3>${esc(d.replace(/_/g,' '))}</h3>`+
-    `<div class=chartbox><canvas></canvas></div>`;
-  dcWrap.appendChild(cell);
-  new Chart(cell.querySelector('canvas'),{type:'bar',
-    data:{labels:ord.map(k=>PLAB[k]),datasets:[{
-      data:ord.map(k=>(DATA.dom_matrix[k]||{})[d]),
-      backgroundColor:ord.map(k=>COLORS[k]||'#94a3b8'),borderRadius:5}]},
-    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
-      scales:{x:{beginAtZero:true,max:100,ticks:{callback:v=>v+'%'}}},
-      plugins:{legend:{display:false},
-        tooltip:{callbacks:{label:c=>c.parsed.x+'% per-field'}}}}});
+const tabbar = document.getElementById('tabbar');
+TABS.forEach((t, i) => {
+  const b = document.createElement('button');
+  b.textContent = t.label;
+  if (i === 0) b.classList.add('active');
+  b.onclick = () => showTab(t.id);
+  tabbar.appendChild(b);
 });
 
-const fp=document.getElementById('fparser');
-DATA.parsers.forEach(([k,l])=>fp.add(new Option('highlight: '+l,k)));
-const fd=document.getElementById('fdomain');
-DATA.domains.forEach(d=>fd.add(new Option(d,d)));
+function showTab(id) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  document.querySelectorAll('.tabs button').forEach((b,i) => {
+    b.classList.toggle('active', TABS[i].id === id);
+  });
+  const el = document.getElementById('tab-' + id);
+  if (el) el.classList.add('on');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
 
-const ql=document.getElementById('qlist');
-function card(q){
-  let hi=fp.value;
-  let head=`<div class=q-head><div class=qt>${esc(q.question)}</div>
-    <div class=meta><span class=sec>${esc(q.domain||'—')}</span>
-    ${esc(q.doc)} &middot; ${q.n_correct}/${q.n_parsers} parsers fully correct</div></div>`;
-  let cols=PK.filter(k=>q.fields.some(f=>f.ans[k]));
-  let th=`<tr><th>field</th><th>GOLD</th>`+
-    cols.map(k=>`<th${k===hi?' style="background:#dde8ff"':''}>${esc(PLAB[k])}</th>`).join('')+`</tr>`;
-  let rows=q.fields.map(f=>{
-    let tds=cols.map(k=>{
-      let a=f.ans[k];
-      if(!a)return `<td class="cell na">—</td>`;
+// ── per-parser charts ────────────────────────────────────────────────────
+const sum = DATA.summary;
+const mkBar = (id, vals, suffix) => new Chart(document.getElementById(id), {
+  type: 'bar',
+  data: {labels: sum.map(s => s.label),
+         datasets: [{data: vals, backgroundColor: sum.map(s => col(s.key)), borderRadius: 6}]},
+  options: {indexAxis:'y', responsive:true, maintainAspectRatio:false,
+    scales: {x: {beginAtZero:true, max:100, ticks: {callback:v=>v+'%'}, grid: {color:'#eef1f5'}},
+             y: {grid: {display:false}}},
+    plugins: {legend: {display:false},
+              tooltip: {callbacks: {label: c => c.parsed.x + suffix}}}}});
+mkBar('chartField', sum.map(s=>s.field_pct), '% per-field');
+mkBar('chartQuestion', sum.map(s=>s.q_pct), '% per-question');
+
+document.getElementById('bars').innerHTML = sum.map(s => {
+  const c2 = col(s.key);
+  return `<div class=bar><div class=nm>${esc(s.label)}</div>
+  <div class=tk><div class=fl style="width:${s.field_pct}%;background:${c2}"></div></div>
+  <div class=pc>${s.field_pct}% · ${s.q_pct}% q</div></div>`;
+}).join('');
+
+// ── per-domain charts ────────────────────────────────────────────────────
+const dcWrap = document.getElementById('domcharts');
+const ord = sum.map(s => s.key);
+DATA.domains.forEach(d => {
+  const cell = document.createElement('div');
+  cell.className = 'chartcell';
+  cell.innerHTML = `<h3>${esc(d.replace(/_/g,' '))}</h3>
+    <div class=chartbox><canvas></canvas></div>`;
+  dcWrap.appendChild(cell);
+  new Chart(cell.querySelector('canvas'), {
+    type: 'bar',
+    data: {labels: ord.map(k => PLAB[k]),
+           datasets: [{data: ord.map(k => (DATA.dom_matrix[k] || {})[d]),
+                       backgroundColor: ord.map(k => col(k)), borderRadius: 6}]},
+    options: {indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      scales: {x: {beginAtZero:true, max:100, ticks: {callback:v=>v+'%'}, grid: {color:'#eef1f5'}},
+               y: {grid: {display:false}}},
+      plugins: {legend: {display:false},
+                tooltip: {callbacks: {label: c => c.parsed.x + '% per-field'}}}}});
+});
+
+// ── capability heatmap ──────────────────────────────────────────────────
+const hmColor = pct => {
+  if (pct == null) return '#f4f4f4';
+  if (pct >= 95) return 'var(--hm-7)';
+  if (pct >= 90) return 'var(--hm-6)';
+  if (pct >= 85) return 'var(--hm-5)';
+  if (pct >= 80) return 'var(--hm-4)';
+  if (pct >= 75) return 'var(--hm-3)';
+  if (pct >= 70) return 'var(--hm-2)';
+  return 'var(--hm-1)';
+};
+const mat = document.getElementById('bucket-matrix');
+let head = '<thead><tr><th>Parser</th>' + DATA.buckets.map(b => {
+  const tid = 'bucket_' + slug(b.name);
+  return `<th><a onclick="showTab('${tid}')">${esc(b.name)}</a>
+          <br><span style="font-size:9.5px;color:var(--ink-3);font-weight:400">
+          ${b.n_qs} Qs</span></th>`;
+}).join('') + '</tr></thead><tbody>';
+let body = ord.map(pk => {
+  const cells = DATA.buckets.map(b => {
+    const s = b.per_parser[pk] || {field_pct:0, f_ok:0, f_tot:0};
+    return `<td class=cell style="background:${hmColor(s.field_pct)}">
+            <span class=pct>${s.field_pct}%</span>
+            <span class=frac>${s.f_ok}/${s.f_tot}</span></td>`;
+  }).join('');
+  return `<tr><td class=parser>${esc(PLAB[pk])}</td>${cells}</tr>`;
+}).join('');
+mat.innerHTML = head + body + '</tbody>';
+
+// ── per-bucket tabs ─────────────────────────────────────────────────────
+const bucketTabsWrap = document.getElementById('bucket-tabs');
+DATA.buckets.forEach((b, bi) => {
+  const tid = 'bucket_' + slug(b.name);
+  const tab = document.createElement('div');
+  tab.id = 'tab-' + tid;
+  tab.className = 'tab';
+  const chartId = 'chart-' + tid;
+  tab.innerHTML = `
+    <div class=bucket-header>
+      <h3>${esc(b.name)}</h3>
+      <div class=desc>${esc(b.desc)}</div>
+      <div class=meta>Tags: ${b.tags.join(', ')} · ${b.n_qs} questions in bank</div>
+    </div>
+    <div class=panel>
+      <h2>Per-parser accuracy — this bucket</h2>
+      <div class=chartbox><canvas id="${chartId}"></canvas></div>
+    </div>
+    <div class=panel>
+      <h2>Representative questions</h2>
+      <div class=note>6 most parser-discriminative questions — where some parsers got it right and others wrong. Gold shown first, then each parser's answer color-coded ✓/✗.</div>
+      <div id="examples-${tid}"></div>
+    </div>`;
+  bucketTabsWrap.appendChild(tab);
+
+  // bar chart — sort DESC for nicer reading
+  const pairs = ord.map(k => ({k, v: (b.per_parser[k] || {field_pct:0}).field_pct}))
+                   .sort((a,b) => b.v - a.v);
+  new Chart(document.getElementById(chartId), {
+    type: 'bar',
+    data: {labels: pairs.map(p => PLAB[p.k]),
+           datasets: [{data: pairs.map(p => p.v),
+                       backgroundColor: pairs.map(p => col(p.k)), borderRadius: 6}]},
+    options: {indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      scales: {x: {beginAtZero:true, max:100, ticks: {callback:v=>v+'%'}, grid: {color:'#eef1f5'}},
+               y: {grid: {display:false}}},
+      plugins: {legend: {display:false},
+                tooltip: {callbacks: {label: c => c.parsed.x + '% per-field'}}}}});
+
+  // examples
+  const exWrap = document.getElementById('examples-' + tid);
+  exWrap.innerHTML = b.examples.map(ex => {
+    const caps = (ex.caps || []).map(c => `<span>${esc(c)}</span>`).join('');
+    const cells = ord.map(pk => {
+      const ans = ex.answers[pk];
+      const c2 = col(pk);
+      if (!ans) {
+        return `<div class=pcell><div class=ph>
+                <span class=pdot style="background:${c2}"></span>${esc(PLAB[pk])}
+                <span class=ok-mark style="color:#9ca3af">—</span></div>
+                <div class=ans style="color:#9ca3af">(no parse)</div></div>`;
+      }
+      const ok = ans.ok;
+      return `<div class="pcell ${ok?'ok':'no'}"><div class=ph>
+              <span class=pdot style="background:${c2}"></span>${esc(PLAB[pk])}
+              <span class="ok-mark ${ok?'y':'n'}">${ok?'✓':'✗'}</span></div>
+              <div class=ans>${esc(fmt(ans.v))}</div></div>`;
+    }).join('');
+    return `<div class=qcard>
+      <div class=qhead>
+        <div class=qt>${esc(ex.question)}</div>
+        <div class=qmeta>${esc(ex.doc)}<br>
+                         <span class=qid>${esc(ex.qid)}</span></div>
+      </div>
+      <div class=caps>${caps}</div>
+      <div class=gold-row>${esc(fmt(ex.gold))}</div>
+      <div class=pgrid>${cells}</div>
+    </div>`;
+  }).join('');
+});
+
+// ── question browser ────────────────────────────────────────────────────
+const fp = document.getElementById('fparser');
+DATA.parsers.forEach(([k,l]) => fp.add(new Option('highlight: '+l, k)));
+const fd = document.getElementById('fdomain');
+DATA.domains.forEach(d => fd.add(new Option(d, d)));
+
+function qcard(q) {
+  const hi = fp.value;
+  const head = `<div class=q-head><div class=qt>${esc(q.question)}</div>
+    <div class=meta><span class=sec>${esc(q.domain || '—')}</span>
+    ${esc(q.doc)} · ${q.n_correct}/${q.n_parsers} parsers fully correct</div></div>`;
+  const cols = PK.filter(k => q.fields.some(f => f.ans[k]));
+  const th = `<tr><th>field</th><th>GOLD</th>` +
+    cols.map(k => `<th${k===hi?' style="background:#dde8ff"':''}>${esc(PLAB[k])}</th>`).join('') + `</tr>`;
+  const rows = q.fields.map(f => {
+    const tds = cols.map(k => {
+      const a = f.ans[k];
+      if (!a) return `<td class="cell na">—</td>`;
       return `<td class="cell ${a.ok?'ok':'no'}">${a.ok?'✓':'✗'} ${esc(fmt(a.v))}</td>`;
     }).join('');
     return `<tr><td class=fld>${esc(f.key)}</td>
@@ -177,23 +450,28 @@ function card(q){
   }).join('');
   return `<div class=q>${head}<div class=q-body><table class=qa>${th}${rows}</table></div></div>`;
 }
-function render(){
-  const s=document.getElementById('search').value.toLowerCase().trim();
-  const ow=document.getElementById('fonlywrong').checked;
-  const dom=fd.value;
-  let qs=DATA.questions.filter(q=>{
-    if(ow && q.n_correct===q.n_parsers) return false;
-    if(dom && q.domain!==dom) return false;
-    if(s){const h=(q.question+' '+q.doc).toLowerCase();
-      if(!h.includes(s))return false;}
-    return true;});
-  document.getElementById('count').textContent=qs.length+' / '+DATA.questions.length+' questions';
-  ql.innerHTML=qs.slice(0,400).map(card).join('')+
-    (qs.length>400?`<div class=note style="text-align:center">showing first 400 (hardest)</div>`:'');
+
+function renderQs() {
+  const s = document.getElementById('search').value.toLowerCase().trim();
+  const ow = document.getElementById('fonlywrong').checked;
+  const dom = fd.value;
+  const qs = DATA.questions.filter(q => {
+    if (ow && q.n_correct === q.n_parsers) return false;
+    if (dom && q.domain !== dom) return false;
+    if (s) {
+      const h = (q.question + ' ' + q.doc).toLowerCase();
+      if (!h.includes(s)) return false;
+    }
+    return true;
+  });
+  document.getElementById('count').textContent = qs.length + ' / ' + DATA.questions.length + ' questions';
+  const ql = document.getElementById('qlist');
+  ql.innerHTML = qs.slice(0, 400).map(qcard).join('') +
+    (qs.length > 400 ? `<div class=note style="text-align:center">showing first 400 (hardest)</div>` : '');
 }
-document.getElementById('search').oninput=render;
-document.getElementById('fonlywrong').onchange=render;
-fd.onchange=render;
-fp.onchange=render;
-render();
+document.getElementById('search').oninput = renderQs;
+document.getElementById('fonlywrong').onchange = renderQs;
+fd.onchange = renderQs;
+fp.onchange = renderQs;
+renderQs();
 </script></body></html>

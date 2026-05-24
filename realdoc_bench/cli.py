@@ -279,6 +279,10 @@ def evaluate_report(
     merge_domains: str | None = typer.Option(
         None, "--merge-domains",
         help="src=dst,src2=dst2 — fold one domain into another for display"),
+    capabilities: Path | None = typer.Option(
+        None, "--capabilities",
+        help="YAML overriding the default capability bucket groupings "
+             "(see realdoc_bench/evaluate/capability_buckets.yaml for the schema)"),
 ) -> None:
     """Build the dashboard from cached eval results."""
     layout = RunLayout.at(run_dir)
@@ -287,8 +291,10 @@ def evaluate_report(
         for pair in merge_domains.split(","):
             src, dst = pair.split("=")
             merge[src.strip()] = dst.strip()
-    out_path = ev_report.build_report(layout, bank_path=bank, out_path=out,
-                                       merge_domains=merge)
+    out_path = ev_report.build_report(
+        layout, bank_path=bank, out_path=out,
+        merge_domains=merge, capabilities_path=capabilities,
+    )
     ev_score.aggregate_results(layout)
     console.print(f"dashboard: {out_path}")
 

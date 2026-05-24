@@ -1,0 +1,80 @@
+# Default capability buckets for `evaluate report` drilldowns.
+#
+# Each bucket groups bank `capabilities` tags that share a layout-failure mode.
+# Used to build the per-capability heatmap + per-bucket drilldown tabs.
+#
+# Override per-run with: `evaluate report --capabilities path/to/your.yaml`
+#
+# Schema (per bucket):
+#   - name: <display name>           # appears as tab label + matrix column
+#     desc: <one-line description>   # shown in the bucket header
+#     tags:                          # list of capability tags from the bank
+#       - <tag1>
+#       - <tag2>
+#
+# Tag names must match those in your bank's `capabilities` field (the
+# question-bank `items[].capabilities` arrays). Unknown tags are silently
+# skipped — `n_qs` will read as 0 for that bucket.
+#
+# Reorder freely; the order here = the order on the dashboard.
+
+- name: Checkboxes
+  desc: Form checkboxes (X / ✓ marks, Yes/No grids, hand-drawn checks).
+  tags:
+    - checkbox_state
+    - handdrawn_check
+    - form_checkbox_grid
+
+- name: Tables
+  desc: Multi-row / multi-column tables — row binding, column alignment, merged cells, totals.
+  tags:
+    - table_structure
+    - table_row_binding
+    - table_column_alignment
+    - table_parsing
+    - row_binding
+    - multi_column_grid
+    - parallel_columns
+    - merged_cells
+    - total_row
+    - repeated_records
+
+- name: Forms / Key-Value
+  desc: Form fields — labels bound to printed or written values.
+  tags:
+    - field_value_pairing
+    - form_key_value
+    - form_region
+    - scanned_form
+
+- name: Multi-column layouts
+  desc: Pages with parallel columns where reading order matters.
+  tags:
+    - parallel_columns
+    - multi_column_grid
+    - column_alignment
+    - reading_order
+
+- name: Charts & figures
+  desc: Bar / pie / line charts and figure callouts.
+  tags:
+    - chart_title
+    - chart_axis
+    - chart_legend
+    - chart_value
+    - figure_content
+
+- name: Handwriting
+  desc: Handwritten cells — cursive transcription on tables, forms, signatures.
+  tags:
+    - handdrawn_check
+
+- name: Blank-field detection
+  desc: Questions where the gold is null/blank — tests parser's ability to NOT hallucinate a value into an empty cell.
+  tags:
+    - blank_field
+
+- name: Small text
+  desc: Fine-print rows, footnotes, dense numeric grids.
+  tags:
+    - small_text
