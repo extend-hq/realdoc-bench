@@ -11,7 +11,7 @@ A document parsing benchmark that measures two things on real documents:
 
 Each mode reports cost and latency alongside quality.
 
-## Full v2 leaderboard (1,359 questions)
+## Full Leaderboard (1,359 questions)
 
 | Parser | Per-field Accuracy | Per-question Accuracy |
 | --- | ---: | ---: |
@@ -25,8 +25,7 @@ Each mode reports cost and latency alongside quality.
 | Reducto | 88.5% | 80.2% |
 | AWS Textract | 70.5% | 53.6% |
 
-## Install
-
+## Installation
 ```bash
 uv sync
 ```
