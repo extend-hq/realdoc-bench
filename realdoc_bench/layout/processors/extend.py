@@ -24,15 +24,13 @@ from realdoc_bench.layout.processors.base import (
 from realdoc_bench.shared.io.cache import sha256_text
 from realdoc_bench.shared.pricing.meter import parse_cost
 
-_STAGING_URL = "https://api.staging.extend.ai"
 _PROD_URL = "https://api.extend.ai"
 
 
-def _base_url_for_key(key: str) -> str:
-    explicit = os.environ.get("EXTEND_BASE_URL")
-    if explicit:
-        return explicit
-    return _STAGING_URL if key.startswith("sk_test_") else _PROD_URL
+def _base_url() -> str:
+    """Always hit prod unless EXTEND_BASE_URL is set explicitly. See the
+    parser variant of this file for the rationale."""
+    return os.environ.get("EXTEND_BASE_URL") or _PROD_URL
 
 
 class _ExtendBase(LayoutProcessor):
@@ -51,7 +49,7 @@ class _ExtendBase(LayoutProcessor):
             token = os.environ.get("EXTEND_API_KEY")
             if not token:
                 raise RuntimeError("EXTEND_API_KEY not set")
-            self._client = Extend(token=token, base_url=_base_url_for_key(token))
+            self._client = Extend(token=token, base_url=_base_url())
         return self._client
 
     def config_hash(self) -> str:
