@@ -16,7 +16,7 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Literal
 
-from realdoc_bench.layout.data.loader import LayoutSample, load
+from realdoc_bench.layout.data.loader import DEFAULT_HF_DATASET, LayoutSample, load
 from realdoc_bench.layout.metrics import ap as ap_metric
 from realdoc_bench.layout.metrics import structural_errors as struct
 from realdoc_bench.layout.metrics.f1 import PRF, aggregate, aggregate_per_class, evaluate, per_class
@@ -148,9 +148,10 @@ def run(
     limit: int | None = None,
     splits: Iterable[str] | None = None,
     domains: Iterable[str] | None = None,
+    dataset: str = DEFAULT_HF_DATASET,
 ) -> RunSummary:
     if samples is None:
-        samples = list(load(splits=splits, domains=domains, limit=limit))
+        samples = list(load(hf_dataset=dataset, splits=splits, domains=domains, limit=limit))
     else:
         samples = list(samples)
 
@@ -302,28 +303,6 @@ def aggregate_summary(summary: RunSummary) -> dict[str, dict]:
             "confidence_present": confidence_present,
         }
     return out
-
-
-def compute_map_for_run(summary: RunSummary, run_dir: Path) -> dict[str, ap_metric.APResult]:
-    """Compute per-processor mAP by re-loading predictions from ``run_dir``."""
-    from realdoc_bench.layout.normalizers.base import LayoutDocument as LD
-
-    by_proc: dict[str, dict[str, list]] = {}
-    gts_by_doc: dict[str, list] = {}
-
-    for cell in summary.cells:
-        if cell.status != "ok":
-            continue
-        pred_path = run_dir / summary.run_id / cell.page_id / cell.processor / "prediction.json"
-        if not pred_path.exists():
-            continue
-        pred_doc = LD.model_validate_json(pred_path.read_text())
-        by_proc.setdefault(cell.processor, {})[cell.page_id] = pred_doc.blocks
-
-    # GT comes from the dataset loader; for now we recompute from predictions' siblings
-    # if the runner persisted them. In practice the runner serializes GT as well — but
-    # for compactness we expect callers to pass GT in via :func:`compute_map_from_preds`.
-    return {}
 
 
 def compute_map_from_preds(

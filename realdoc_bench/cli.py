@@ -26,6 +26,7 @@ from realdoc_bench.evaluate.download import download_dataset
 from realdoc_bench.evaluate.dotenv import load_dotenv
 from realdoc_bench.evaluate.runs import RunLayout
 from realdoc_bench.layout import processors as _processors  # noqa: F401
+from realdoc_bench.layout.data.loader import DEFAULT_HF_DATASET as DEFAULT_LAYOUT_DATASET
 from realdoc_bench.layout.processors.base import registry as proc_registry
 from realdoc_bench.layout.reports.snapshot import write_full as write_layout_report
 from realdoc_bench.layout.runner import aggregate_summary as layout_aggregate
@@ -59,7 +60,10 @@ def layout_list() -> None:
 @layout_app.command("eval")
 def layout_eval(
     processor: list[str] = typer.Option(..., "--processor", "-p"),
-    dataset: str = typer.Option("realdoc-layout", "--dataset"),
+    dataset: str = typer.Option(
+        DEFAULT_LAYOUT_DATASET, "--dataset",
+        help="HF dataset repo id (e.g. Extend-AI/RealDocBench-Layout)",
+    ),
     limit: int | None = typer.Option(None, "--limit"),
     split: list[str] | None = typer.Option(None, "--split"),
     domain: list[str] | None = typer.Option(None, "--domain"),
@@ -76,13 +80,12 @@ def layout_eval(
         ),
     ),
 ) -> None:
-    del dataset
     if scorer not in ("f1", "adjacency"):
         raise typer.BadParameter(f"--scorer must be 'f1' or 'adjacency', got {scorer!r}")
     summary = layout_run(
         processors=processor, limit=limit, splits=split, domains=domain,
         scorer=scorer,  # type: ignore[arg-type]
-        run_id=run_id, run_dir=run_dir,
+        run_id=run_id, run_dir=run_dir, dataset=dataset,
     )
     console.print(f"run_id = [bold]{summary.run_id}[/bold]  scorer = [bold]{scorer}[/bold]")
     aggregates = layout_aggregate(summary)
