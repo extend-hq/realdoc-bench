@@ -24,8 +24,10 @@ extend_performance_v2_0_0_agentic: {unit: page, usd: 0.020}
 azure_di:                       {unit: page,   usd: 0.010}
 aws_textract:                   {unit: page,   usd: 0.015}
 reducto:                        {unit: page,   usd: 0.010}
-llamaparse:                     {unit: page,   usd: 0.030}
-llamaparse_cost_effective:      {unit: page,   usd: 0.005}
+# LlamaParse: $0.00125/credit. Agentic = 10 credits/page → $0.0125;
+# cost-effective = 3 credits/page → $0.00375.
+llamaparse:                     {unit: page,   usd: 0.0125}
+llamaparse_cost_effective:      {unit: page,   usd: 0.00375}
 mistral_ocr:                    {unit: page,   usd: 0.005}
 datalabs_chandra:               {unit: page,   usd: 0.008}
 
