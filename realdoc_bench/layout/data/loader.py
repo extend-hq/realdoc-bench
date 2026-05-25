@@ -27,12 +27,14 @@ DEFAULT_HF_DATASET = "Extend-AI/RealDocBench-Layout"
 @dataclass(frozen=True)
 class LayoutSample:
     page_id: str
-    split: str
     domain: str
     image_path: Path
     ground_truth: LayoutDocument
     source_url: str | None
     original_image_url: str | None
+    # ``split`` is retained for code that still references it but is no longer
+    # populated from the manifest — the public dataset doesn't ship it.
+    split: str = ""
 
 
 def _read_manifest(manifest_path: Path) -> list[dict[str, str]]:
@@ -73,7 +75,7 @@ def load(
     rows = _read_manifest(manifest_path or snapshot / "manifest.csv")
     if splits is not None:
         keep_splits = set(splits)
-        rows = [r for r in rows if r["split"] in keep_splits]
+        rows = [r for r in rows if r.get("split", "") in keep_splits]
     if domains is not None:
         keep_domains = set(domains)
         rows = [r for r in rows if r["domain"] in keep_domains]
@@ -94,12 +96,12 @@ def load(
         yielded += 1
         yield LayoutSample(
             page_id=page_id,
-            split=row["split"],
             domain=row["domain"],
             image_path=image_path,
             ground_truth=gt,
             source_url=row.get("sourceUrl") or None,
             original_image_url=row.get("originalImageUrl") or None,
+            split=row.get("split", ""),
         )
         if limit is not None and yielded >= limit:
             return

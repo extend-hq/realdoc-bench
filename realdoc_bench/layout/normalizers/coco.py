@@ -1,6 +1,11 @@
 """COCO ground-truth normalizer for the realdoc-layout dataset.
 
-Raw COCO ``category_id`` → 9-class public vocabulary in one lookup.
+The dataset's per-file ``categories`` block names the 9 public block
+classes directly; this normalizer looks each ``category_id`` up in that
+block, takes the ``name``, and uses it as the ``block_type``. A
+:class:`LayoutBlock` ``field_validator`` collapses any legacy 18-class
+string into the 9-class equivalent, so older annotation files that still
+carry the raw COCO names also load correctly.
 """
 
 from __future__ import annotations
@@ -34,46 +39,64 @@ class CocoAnnotation(BaseModel):
     iscrowd: int = 0
 
 
-# Raw COCO ``category_id`` → 9-class public ``block_type``. ``Unknown/Other``
-# (id 21) and ``Watermark`` (id 22, already removed from the published dataset)
-# are intentionally skipped.
-_CATEGORY_ID_TO_BLOCK_TYPE: dict[int, str] = {
-    0: "figure",           # Bar/QR codes
-    1: "text",             # Caption
-    2: "text",             # Code block
-    3: "footer",
-    4: "text",             # Footnote / endnote
-    5: "key_value",        # Form
-    6: "text",             # Formula
-    7: "figure",           # Graphical item
-    8: "header",
-    9: "heading",
-    10: "key_value",
-    11: "text",            # Legend
-    12: "text",            # Line number
-    13: "text",            # List item
-    14: "page_number",
-    15: "figure",          # Picture / figure / image / chart
-    16: "text",            # Signature / Signature block
-    17: "section_heading", # Subheading
-    18: "table",
-    19: "table",           # Table of contents
-    20: "text",
+class CocoCategory(BaseModel):
+    id: int
+    name: str
+    supercategory: str | None = None
+
+
+# Fold legacy raw COCO names into the 9 public class names so older
+# annotation files (pre-collapse) also load. Names that already match a
+# public class pass through unchanged via the ``.get(name, name)`` default.
+_LEGACY_NAME_TO_BLOCK_TYPE: dict[str, str] = {
+    "Bar/QR Codes": "figure",
+    "Caption": "text",
+    "Code Block": "text",
+    "Footer": "footer",
+    "Footnote/Endnote": "text",
+    "Form": "key_value",
+    "Formula": "text",
+    "Graphical Item": "figure",
+    "Header": "header",
+    "Heading": "heading",
+    "Key Value": "key_value",
+    "Legend": "text",
+    "Line Number": "text",
+    "List Item": "text",
+    "Page Number": "page_number",
+    "Picture/Figure/Image/Chart": "figure",
+    "Signature / Signature Block": "text",
+    "Subheading": "section_heading",
+    "Table": "table",
+    "Table_of_contents": "table",
+    "Text": "text",
+    "Unknown/Other": "",  # drop
+    "Watermark": "",      # drop
 }
-_SKIP_CATEGORY_IDS: frozenset[int] = frozenset({21, 22})
+
+
+def _resolve_block_type(name: str) -> str:
+    """Return the public 9-class ``block_type`` for a category name, or ``""``
+    if the category should be dropped."""
+    return _LEGACY_NAME_TO_BLOCK_TYPE.get(name, name)
 
 
 def coco_to_layout_document(
     image: CocoImage,
     annotations: list[CocoAnnotation],
+    categories: list[CocoCategory],
     *,
     source: str | None = None,
 ) -> LayoutDocument:
+    id_to_block_type: dict[int, str] = {}
+    for cat in categories:
+        bt = _resolve_block_type(cat.name)
+        if bt:
+            id_to_block_type[cat.id] = bt
+
     blocks: list[LayoutBlock] = []
     for ann in annotations:
-        if ann.category_id in _SKIP_CATEGORY_IDS:
-            continue
-        block_type = _CATEGORY_ID_TO_BLOCK_TYPE.get(ann.category_id)
+        block_type = id_to_block_type.get(ann.category_id)
         if block_type is None:
             continue
         x, y, w, h = ann.bbox
@@ -94,8 +117,9 @@ def coco_to_layout_document(
 def normalize_coco(data: dict, *, source: str | None = None) -> LayoutDocument:
     """Normalize a COCO-style annotation dict into a LayoutDocument.
 
-    Accepts both single-image envelopes (``{"image": {...}, "annotations": [...]}``)
-    and the legacy ``page_info``/``layout_dets`` shape used by some training pipelines.
+    Accepts both single-image envelopes (``{"image": {...}, "annotations": [...],
+    "categories": [...]}``) and the legacy ``page_info``/``layout_dets`` shape
+    used by some training pipelines.
     """
     image_data = data.get("image") or data.get("page_info") or {}
     if "file_name" not in image_data and "image_path" in image_data:
@@ -108,4 +132,5 @@ def normalize_coco(data: dict, *, source: str | None = None) -> LayoutDocument:
     image = CocoImage.model_validate(image_data)
     raw_annotations = data.get("annotations") or data.get("layout_dets") or []
     annotations = [CocoAnnotation.model_validate(ann) for ann in raw_annotations]
-    return coco_to_layout_document(image, annotations, source=source)
+    categories = [CocoCategory.model_validate(c) for c in (data.get("categories") or [])]
+    return coco_to_layout_document(image, annotations, categories, source=source)
