@@ -1,8 +1,7 @@
 """Layout block / document data model.
 
-(Schema cleaned and consolidated from (``models/normalized/layout.py`` and
-``helpers/boxes.py``). The block-type vocabulary matches the realdoc-layout
-COCO categories.
+The block-type vocabulary aligns with extend v2's native block-type
+enum, surfacing the nine classes the benchmark actually evaluates.
 """
 
 from __future__ import annotations
@@ -15,24 +14,37 @@ from pydantic import BaseModel, field_validator
 
 LayoutBlockType = Literal[
     "text",
-    "title",
-    "section_header",
-    "formula",
-    "list_item",
-    "page_header",
-    "page_footer",
+    "heading",
+    "section_heading",
+    "header",
+    "footer",
     "page_number",
-    "footnote",
-    "signature",
-    "key_value",
-    "table",
-    "table_cell",
-    "table_caption",
-    "table_footer",
     "figure",
-    "figure_caption",
-    "figure_footnote",
+    "table",
+    "key_value",
 ]
+
+# Backwards-compat coercion for older 18-class block-type strings that
+# may still appear in cached ``prediction.json`` files on disk. Anything
+# extend v2 cannot natively emit (or that this benchmark folds away) maps
+# into the nearest surviving class.
+_LEGACY_BLOCK_TYPE_REMAP: dict[str, str] = {
+    "title": "heading",
+    "section_header": "section_heading",
+    "page_header": "header",
+    "page_footer": "footer",
+    "formula": "text",
+    "list_item": "text",
+    "footnote": "text",
+    "signature": "text",
+    "figure_caption": "text",
+    "figure_footnote": "text",
+    "table_caption": "text",
+    "table_footer": "text",
+    "table_cell": "table",
+    "barcode": "figure",
+    "watermark": "text",
+}
 
 
 class BBox(BaseModel):
@@ -105,6 +117,18 @@ class LayoutBlock(BaseModel):
     @classmethod
     def _coerce_confidence(cls, v: float | None) -> float:
         return 1.0 if v is None else float(v)
+
+    @field_validator("block_type", mode="before")
+    @classmethod
+    def _coerce_block_type(cls, v: str) -> str:
+        """Collapse legacy/fine-grained block-type strings into the public 9.
+
+        Lets cached ``prediction.json`` files written under the old 18-class
+        vocabulary keep loading after the taxonomy collapse.
+        """
+        if not isinstance(v, str):
+            return v
+        return _LEGACY_BLOCK_TYPE_REMAP.get(v, v)
 
 
 class LayoutPage(BaseModel):

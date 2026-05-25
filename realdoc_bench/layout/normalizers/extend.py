@@ -18,26 +18,24 @@ from realdoc_bench.layout.normalizers.base import (
     LayoutPage,
 )
 
-# Extend block.type → our LayoutBlockType. Unknown types are dropped.
+# Extend SDK ``BlockType`` enum → 9-class public ``LayoutBlockType``.
+# Mirrors ``extend_ai.types.block_type.BlockType``: text / heading /
+# section_heading / table / figure / table_head / table_cell / key_value /
+# page_number / barcode / formula / header / footer. Unknown types drop.
 _EXTEND_TO_LAYOUT: dict[str, LayoutBlockType] = {
     "text": "text",
-    "heading": "title",
-    "section_heading": "section_header",
-    "table": "table",
-    "table_cell": "table_cell",
+    "heading": "heading",
+    "section_heading": "section_heading",
+    "header": "header",
+    "footer": "footer",
+    "page_number": "page_number",
     "figure": "figure",
     "barcode": "figure",
+    "table": "table",
+    "table_head": "table",  # fold; the GT taxonomy has no separate table-head class
     "key_value": "key_value",
-    "header": "page_header",
-    "page_header": "page_header",
-    "footer": "page_footer",
-    "page_footer": "page_footer",
-    "page_number": "page_number",
-    "figure_caption": "figure_caption",
-    "formula": "formula",
-    "list_item": "list_item",
-    "signature": "signature",
-    "footnote": "footnote",
+    "formula": "text",       # extend emits formula; the public 9 fold it into text
+    # ``table_cell`` is intentionally absent — it is not part of this eval.
 }
 
 

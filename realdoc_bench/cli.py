@@ -175,12 +175,9 @@ def layout_rescore(
     processor: list[str] | None = typer.Option(
         None, "--processor", "-p",
         help="Processor to score (repeatable). Default: every processor in the run."),
-    merge_profile: str = typer.Option(
-        "none", "--merge-profile",
-        help=f"Class-merge profile applied to preds + GT. One of {adjacency_rescore.MERGE_PROFILES}."),
     ignore_mode: str = typer.Option(
         "disabled", "--ignore-mode",
-        help=f"Ignore-filter mode for header/footer/caption block types. One of {adjacency_rescore.IGNORE_MODES}."),
+        help=f"Optional per-class ignore filter. One of {adjacency_rescore.IGNORE_MODES}."),
     iou: float = typer.Option(0.5, "--iou", help="IoU match threshold."),
     gap_threshold: float = typer.Option(0.02, "--gap-threshold", help="Adjacency gap fraction."),
     limit: int | None = typer.Option(None, "--limit", help="Score only the first N samples."),
@@ -195,7 +192,7 @@ def layout_rescore(
     try:
         missing = adjacency_rescore.run_rescore(
             run_dir=run_dir, run_id=run_id, processors=processor or [],
-            splits=split, limit=limit, merge_profile=merge_profile,
+            splits=split, limit=limit,
             ignore_mode=ignore_mode, iou_threshold=iou, gap_threshold=gap_threshold,
         )
     except (FileNotFoundError, ValueError) as e:

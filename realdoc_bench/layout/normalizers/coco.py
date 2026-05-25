@@ -1,7 +1,6 @@
 """COCO ground-truth normalizer for the realdoc-layout dataset.
 
-Two-step category mapping
-folded into one dict: raw 23-class annotations → 18-class realdoc-layout vocabulary.
+Raw COCO ``category_id`` → 9-class public vocabulary in one lookup.
 """
 
 from __future__ import annotations
@@ -35,28 +34,30 @@ class CocoAnnotation(BaseModel):
     iscrowd: int = 0
 
 
-# Raw COCO category id → block_type. Skipped ids (Watermark, Unknown/Other) are absent.
+# Raw COCO ``category_id`` → 9-class public ``block_type``. ``Unknown/Other``
+# (id 21) and ``Watermark`` (id 22, already removed from the published dataset)
+# are intentionally skipped.
 _CATEGORY_ID_TO_BLOCK_TYPE: dict[int, str] = {
-    0: "figure",          # Bar/QR codes
-    1: "text",            # Caption
-    2: "text",            # Code block
-    3: "page_footer",
-    4: "footnote",        # Footnote / endnote
-    5: "key_value",       # Form
-    6: "formula",
-    7: "figure",          # Graphical item
-    8: "page_header",
-    9: "title",           # Heading
+    0: "figure",           # Bar/QR codes
+    1: "text",             # Caption
+    2: "text",             # Code block
+    3: "footer",
+    4: "text",             # Footnote / endnote
+    5: "key_value",        # Form
+    6: "text",             # Formula
+    7: "figure",           # Graphical item
+    8: "header",
+    9: "heading",
     10: "key_value",
-    11: "text",           # Legend
-    12: "text",           # Line number
-    13: "list_item",
+    11: "text",            # Legend
+    12: "text",            # Line number
+    13: "text",            # List item
     14: "page_number",
-    15: "figure",
-    16: "signature",
-    17: "section_header", # Subheading
+    15: "figure",          # Picture / figure / image / chart
+    16: "text",            # Signature / Signature block
+    17: "section_heading", # Subheading
     18: "table",
-    19: "table",          # Table of contents
+    19: "table",           # Table of contents
     20: "text",
 }
 _SKIP_CATEGORY_IDS: frozenset[int] = frozenset({21, 22})
