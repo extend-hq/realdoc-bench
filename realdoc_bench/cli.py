@@ -80,8 +80,10 @@ def layout_eval(
         ),
     ),
 ) -> None:
+    _env()
     if scorer not in ("f1", "adjacency"):
         raise typer.BadParameter(f"--scorer must be 'f1' or 'adjacency', got {scorer!r}")
+    _validate_plugin_names(processor, proc_registry, "processor")
     summary = layout_run(
         processors=processor, limit=limit, splits=split, domains=domain,
         scorer=scorer,  # type: ignore[arg-type]
@@ -111,6 +113,7 @@ def layout_report(
     run_dir: Path = typer.Option(Path("runs"), "--run-dir"),
     out_dir: Path | None = typer.Option(None, "--out-dir"),
 ) -> None:
+    _env()
     summary_path = run_dir / run_id / "summary.json"
     summary = json.loads(summary_path.read_text())
     aggregates_path = run_dir / run_id / "aggregates.json"
@@ -162,12 +165,20 @@ def layout_report(
     console.print(f"report: {md_path}")
 
 
-# ── Evaluate ────────────────────────────────────────────────────────────────
-# Convention: every evaluate.* command pulls .env from the current working
-# directory so API keys are picked up without an explicit env var.
+# ── Helpers ─────────────────────────────────────────────────────────────────
+# Convention: every CLI command pulls .env from the current working directory
+# so API keys are picked up without an explicit env var.
 
 def _env() -> None:
     load_dotenv(Path.cwd() / ".env")
+
+
+def _validate_plugin_names(names: list[str], registry, kind: str) -> None:
+    unknown = [n for n in names if n not in registry]
+    if unknown:
+        raise typer.BadParameter(
+            f"unknown {kind} name(s): {unknown}. Available: {registry.names()}"
+        )
 
 
 @evaluate_app.command("list")
@@ -228,6 +239,7 @@ def evaluate_parse(
 ) -> None:
     """Parse every document under <run-dir>/docs/ with each --parser."""
     _env()
+    _validate_plugin_names(parser, parser_registry, "parser")
     layout = RunLayout.at(run_dir)
     records = ev_parse.run_parse(
         layout, parser, bank_path=bank, force=force, retry_errors=retry_errors,
@@ -345,6 +357,8 @@ def evaluate_run(
     parse and score, so you really do redo everything. --limit caps the doc
     set for a smoke run."""
     _env()
+    _validate_plugin_names(parser, parser_registry, "parser")
+    ev_score._api_key()  # fail fast if GEMINI_API_KEY missing — before parsing
     layout = RunLayout.at(run_dir)
 
     console.rule("[1/3] parse")

@@ -1,9 +1,10 @@
 """realdoc-layout dataset loader.
 
-Resolves the manifest CSV from the repo, the image + COCO blobs from the HF
-dataset (``Extend-AI/RealDocBench-Layout``), and yields validated samples
-joining the two. HF is private by default; ``HF_TOKEN`` (or
-``huggingface-cli login``) is required.
+Resolves the manifest CSV plus image + COCO blobs from the HF dataset
+(``Extend-AI/RealDocBench-Layout``) and yields validated samples joining
+the two. HF is private by default; ``HF_TOKEN`` (or
+``huggingface-cli login``) is required. Pass ``manifest_path`` to override
+the snapshot-shipped manifest (useful for tests or local snapshots).
 """
 
 from __future__ import annotations
@@ -21,7 +22,6 @@ from realdoc_bench.layout.normalizers.coco import normalize_coco
 from realdoc_bench.shared.io.hf import fetch_dataset
 
 DEFAULT_HF_DATASET = "Extend-AI/RealDocBench-Layout"
-DEFAULT_MANIFEST = Path(__file__).resolve().parents[3] / "datasets" / "layout" / "manifest.csv"
 
 
 @dataclass(frozen=True)
@@ -58,16 +58,19 @@ def _load_blobs(snapshot_dir: Path, page_id: str) -> tuple[Path, dict]:
 
 def load(
     *,
-    manifest_path: Path = DEFAULT_MANIFEST,
+    manifest_path: Path | None = None,
     hf_dataset: str = DEFAULT_HF_DATASET,
     hf_revision: str | None = None,
     splits: Iterable[str] | None = None,
     domains: Iterable[str] | None = None,
     limit: int | None = None,
 ) -> Iterator[LayoutSample]:
-    """Yield :class:`LayoutSample` records for the (optionally filtered) manifest."""
+    """Yield :class:`LayoutSample` records for the (optionally filtered) manifest.
+
+    ``manifest_path`` defaults to ``<snapshot>/manifest.csv`` from the HF dataset.
+    """
     snapshot = fetch_dataset(hf_dataset, revision=hf_revision)
-    rows = _read_manifest(manifest_path)
+    rows = _read_manifest(manifest_path or snapshot / "manifest.csv")
     if splits is not None:
         keep_splits = set(splits)
         rows = [r for r in rows if r["split"] in keep_splits]

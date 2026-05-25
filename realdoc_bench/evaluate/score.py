@@ -377,6 +377,8 @@ def run_score(layout: RunLayout, parsers: list[str] | None = None, *,
     """Score every (item × parser) pair against the bank. When `parsers` is
     falsy, scores every parser found under `<run-dir>/parses/`."""
     layout.ensure_dirs()
+    if extract is None:
+        _api_key()  # fail fast on missing GEMINI_API_KEY before spinning up the worker pool
     bank_path = bank_path or layout.bank_path
     if not bank_path.exists():
         raise FileNotFoundError(f"no bank at {bank_path}")

@@ -122,7 +122,7 @@ python -m realdoc_bench.layout.metrics.adjacency.rescore --run-id <id> --merge-p
 
 ### Assumptions
 
-- **Dataset:** [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) (1,500 pages, private) by default; override with `--dataset <repo-id>`. Manifest in `datasets/layout/manifest.csv`; image + COCO blobs come from HF on first use (set `HF_TOKEN`, or `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` to a local snapshot).
+- **Dataset:** [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) (1,500 pages, private) by default; override with `--dataset <repo-id>`. Manifest + image + COCO blobs all come from HF on first use (set `HF_TOKEN`, or `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` to a local snapshot).
 - **Matching:** axis-aligned IoU, threshold 0.5 (`--iou-threshold` to change). No confidence sweep — every prediction counts positive at IoU ≥ 0.5; mAP is computed separately when `confidence_present=True`.
 - **Adjusted F1 (adjacency only):** after the 1:1 match, unmatched same-type preds with gap < `0.02 × max(page_w, page_h)` are merged and re-scored; symmetric for unmatched GTs.
 - **Cost & latency:** each processor reports `cost_estimate_usd` / `latency_sec` per page when available; aggregates carry `$/page` and `latency_sec/page`, and the snapshot Pareto plots use them.
@@ -134,7 +134,7 @@ Distributed via the [Hugging Face Hub](https://huggingface.co/Extend-AI) under t
 - [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) — 1,500-page layout benchmark with COCO annotations.
 - [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench) — QA-extraction bench (1,359 questions × 581 documents, private). What `evaluate download` pulls.
 
-The list of pages and per-page metadata for the layout set ships in `datasets/layout/manifest.csv`; image and annotation blobs live on HF.
+The layout set ships its `manifest.csv` (page list + per-page metadata) alongside `images/` and `annotations/` on HF.
 
 ## License
 
