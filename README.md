@@ -116,7 +116,7 @@ Two scorers are wired into `layout eval`; both build on a Hungarian matcher.
 - **`adjacency`** — Hungarian on `1 − IoU + 0.25·type` (wrong-type pair stays TP, surfaced as `misclassifications`) with adjacency split/merge recovery; reports an additional **adjusted F1** that lets the matcher merge adjacent same-type fragments to recover from over/under-segmentation. See [`realdoc_bench/layout/metrics/adjacency/`](realdoc_bench/layout/metrics/adjacency/).
 
 ```bash
-realdoc-bench layout eval -p extend_v2_0_0_beta --limit 50 --scorer adjacency
+realdoc-bench layout eval -p extend_v2_0_0 --limit 50 --scorer adjacency
 ```
 
 The adjacency scorer also has a Python API and a re-score command that re-scores an existing run's cached predictions (no model calls):

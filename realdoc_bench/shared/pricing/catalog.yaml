@@ -10,7 +10,7 @@
 
 # ── Layout / parser providers (per page) ────────────────────────────────────
 extend_v1_0_1:                  {unit: page,   usd: 0.010}
-extend_v2_0_0_beta:             {unit: page,   usd: 0.012}
+extend_v2_0_0:                  {unit: page,   usd: 0.012}
 extend_v2_agentic:              {unit: page,   usd: 0.020}
 extend_performance_v2_beta:     {unit: page,   usd: 0.012}
 extend_performance_agentic:     {unit: page,   usd: 0.020}

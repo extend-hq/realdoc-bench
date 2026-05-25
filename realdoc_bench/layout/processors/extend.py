@@ -95,10 +95,10 @@ class _ExtendBase(LayoutProcessor):
         )
 
 
-@register_layout_processor("extend_v2_0_0_beta", version="2.0.0-beta")
+@register_layout_processor("extend_v2_0_0", version="2.0.0")
 class ExtendV2(_ExtendBase):
     engine = "parse_performance"
-    engine_version = "2.0.0-beta"
+    engine_version = "2.0.0"
     config_extra = {
         "chunkingStrategy": {"type": "page"},
         "blockOptions": {

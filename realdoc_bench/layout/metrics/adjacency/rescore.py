@@ -7,7 +7,7 @@ realdoc-bench's own ``coco_eval`` / ``f1`` scorer.
 
 Exposed as the ``realdoc-bench layout rescore`` CLI command::
 
-    realdoc-bench layout rescore --run-id v500 --processor extend_v2_0_0_beta \\
+    realdoc-bench layout rescore --run-id v500 --processor extend_v2_0_0 \\
         --ignore-mode exclude_matching
 
 If ``--processor`` is omitted every processor subdirectory under the run is
