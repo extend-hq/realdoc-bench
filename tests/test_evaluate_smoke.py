@@ -49,7 +49,7 @@ def _explode(*a, **k):
 
 @pytest.fixture(autouse=True)
 def _fake_gemini_key(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Satisfy run_score's _api_key() preflight without a real key.
+    """Satisfy run_score's require_api_key() preflight without a real key.
 
     WARNING: this fixture only sets the env var. Any new test that exercises
     a path which calls ``gemini_extract`` MUST also monkeypatch it with a
