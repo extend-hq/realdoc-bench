@@ -32,7 +32,6 @@ def _doc(blocks: list[LayoutBlock], *, w: int = 1000, h: int = 1000) -> LayoutDo
 def _sample(gt_blocks: list[LayoutBlock]) -> LayoutSample:
     return LayoutSample(
         page_id="p1",
-        split="test",
         domain="x",
         image_path=Path("/dev/null"),
         ground_truth=_doc(gt_blocks),

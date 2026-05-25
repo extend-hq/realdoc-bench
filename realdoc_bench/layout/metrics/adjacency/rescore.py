@@ -118,7 +118,6 @@ def run_rescore(
     run_dir: Path,
     run_id: str,
     processors: list[str],
-    splits: list[str] | None = None,
     limit: int | None = None,
     ignore_mode: str = "disabled",
     iou_threshold: float = 0.5,
@@ -143,7 +142,7 @@ def run_rescore(
     if not procs:
         raise ValueError(f"no processors with prediction.json under {run_root}")
 
-    samples = list(load(splits=splits or None, limit=limit))
+    samples = list(load(limit=limit))
     print(
         f"Run {run_id}: {len(samples)} GT samples, processors {procs}\n"
         f"Metric: match_blocks_with_adjacency "

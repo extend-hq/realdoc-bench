@@ -145,12 +145,11 @@ def run(
     run_id: str | None = None,
     run_dir: Path = Path("runs"),
     limit: int | None = None,
-    splits: Iterable[str] | None = None,
     domains: Iterable[str] | None = None,
     dataset: str = DEFAULT_HF_DATASET,
 ) -> RunSummary:
     if samples is None:
-        samples = list(load(hf_dataset=dataset, splits=splits, domains=domains, limit=limit))
+        samples = list(load(hf_dataset=dataset, domains=domains, limit=limit))
     else:
         samples = list(samples)
 
