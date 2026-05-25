@@ -5,21 +5,19 @@ Reads the ``prediction.json`` files a layout run already wrote under
 1:1 matcher + adjacency split/merge recovery in this package — instead of
 realdoc-bench's own ``coco_eval`` / ``f1`` scorer.
 
-Usage::
+Exposed as the ``realdoc-bench layout rescore`` CLI command::
 
-    python -m realdoc_bench.layout.metrics.adjacency.rescore \\
-        --run-id v500 --processor extend_v2_0_0_beta \\
+    realdoc-bench layout rescore --run-id v500 --processor extend_v2_0_0_beta \\
         --merge-profile extended --ignore-mode exclude_matching
 
 If ``--processor`` is omitted every processor subdirectory under the run is
 scored. Ground truth is loaded through the standard dataset loader, so the
 same ``HF_TOKEN`` / dataset-env requirements as ``realdoc-bench layout eval``
-apply.
+apply (the CLI auto-loads ``.env`` / ``.env.local``).
 """
 
 from __future__ import annotations
 
-import argparse
 import sys
 from pathlib import Path
 
@@ -119,78 +117,70 @@ def rescore_processor(
     return score_pairs(pairs, iou_threshold=iou_threshold, gap_threshold=gap_threshold)
 
 
-def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(
-        description="Re-score a layout run with the Hungarian + adjacency metric.",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument("--run-id", required=True, help="Run directory name under --run-dir.")
-    parser.add_argument("--run-dir", type=Path, default=Path("runs"))
-    parser.add_argument(
-        "--processor",
-        action="append",
-        default=[],
-        help="Processor to score (repeatable). Default: every processor in the run.",
-    )
-    parser.add_argument(
-        "--merge-profile",
-        choices=["none", "core5", "extended", "full"],
-        default="none",
-        help="Class-merge profile applied to both predictions and GT.",
-    )
-    parser.add_argument(
-        "--ignore-mode",
-        choices=["disabled", "exclude_matching", "include_exclude_metrics"],
-        default="disabled",
-        help="Ignore-filter mode for header/footer/caption-style block types.",
-    )
-    parser.add_argument("--iou", type=float, default=0.5, help="IoU match threshold.")
-    parser.add_argument("--gap-threshold", type=float, default=0.02, help="Adjacency gap fraction.")
-    parser.add_argument("--limit", type=int, default=None, help="Score only the first N samples.")
-    parser.add_argument("--split", action="append", default=[], help="Restrict to dataset split(s).")
-    args = parser.parse_args(argv)
+MERGE_PROFILES = ("none", "core5", "extended", "full")
+IGNORE_MODES = ("disabled", "exclude_matching", "include_exclude_metrics")
 
-    run_root = args.run_dir / args.run_id
+
+def run_rescore(
+    *,
+    run_dir: Path,
+    run_id: str,
+    processors: list[str],
+    splits: list[str] | None = None,
+    limit: int | None = None,
+    merge_profile: str = "none",
+    ignore_mode: str = "disabled",
+    iou_threshold: float = 0.5,
+    gap_threshold: float = 0.02,
+) -> int:
+    """Re-score a layout run with the Hungarian + adjacency metric and print the
+    per-processor breakdown.
+
+    ``processors`` empty → every processor with a ``prediction.json`` under the
+    run. Returns the number of processors that had no predictions (0 = all
+    scored). Raises ``FileNotFoundError`` (missing run dir) or ``ValueError``
+    (bad choice / no processors) on invalid input.
+    """
+    if merge_profile not in MERGE_PROFILES:
+        raise ValueError(f"merge_profile must be one of {MERGE_PROFILES}, got {merge_profile!r}")
+    if ignore_mode not in IGNORE_MODES:
+        raise ValueError(f"ignore_mode must be one of {IGNORE_MODES}, got {ignore_mode!r}")
+
+    run_root = run_dir / run_id
     if not run_root.is_dir():
-        print(f"error: run directory not found: {run_root}", file=sys.stderr)
-        return 2
+        raise FileNotFoundError(f"run directory not found: {run_root}")
 
-    processors = args.processor or _discover_processors(run_root)
-    if not processors:
-        print(f"error: no processors with prediction.json under {run_root}", file=sys.stderr)
-        return 2
+    procs = processors or _discover_processors(run_root)
+    if not procs:
+        raise ValueError(f"no processors with prediction.json under {run_root}")
 
-    samples = list(load(splits=args.split or None, limit=args.limit))
+    samples = list(load(splits=splits or None, limit=limit))
     print(
-        f"Run {args.run_id}: {len(samples)} GT samples, processors {processors}\n"
+        f"Run {run_id}: {len(samples)} GT samples, processors {procs}\n"
         f"Metric: match_blocks_with_adjacency "
-        f"(IoU={args.iou:.2f}, gap={args.gap_threshold}, "
-        f"merge_profile={args.merge_profile}, ignore_mode={args.ignore_mode})\n",
+        f"(IoU={iou_threshold:.2f}, gap={gap_threshold}, "
+        f"merge_profile={merge_profile}, ignore_mode={ignore_mode})\n",
         file=sys.stderr,
     )
 
-    exit_code = 0
-    for proc in processors:
+    missing = 0
+    for proc in procs:
         result = rescore_processor(
             run_root,
             proc,
             samples,
-            merge_profile=args.merge_profile,
-            ignore_mode=args.ignore_mode,
-            iou_threshold=args.iou,
-            gap_threshold=args.gap_threshold,
+            merge_profile=merge_profile,
+            ignore_mode=ignore_mode,
+            iou_threshold=iou_threshold,
+            gap_threshold=gap_threshold,
         )
         if result is None:
             print(f"### {proc}: no predictions found — skipped\n", file=sys.stderr)
-            exit_code = 1
+            missing += 1
             continue
         print(f"\n##### {proc} — {result.n_pages} pages "
               f"(splits resolved {result.splits_resolved}, merges resolved {result.merges_resolved})")
         _print_breakdown("Strict F1 (Hungarian 1:1, no confidence sweep)", result.strict)
         _print_breakdown("Adjusted F1 (with adjacency split/merge recovery)", result.adjusted)
 
-    return exit_code
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())
+    return missing
