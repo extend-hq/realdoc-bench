@@ -11,7 +11,6 @@ parsers the caller asked for. Other parsers' artifacts are never touched.
 from __future__ import annotations
 
 import json
-import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
@@ -132,15 +131,12 @@ def run_parse(layout: RunLayout, parsers: list[str], *,
                 f"--limit {limit} → {len(wanted)} source_files, but none of "
                 f"them are present in {layout.docs_dir} as *.pdf")
 
-    instances: dict[str, ParseProvider] = {}
-    for name in parsers:
-        if name not in registry:
-            print(f"  ! parser {name!r} not registered, skipping",
-                  file=sys.stderr)
-            continue
-        instances[name] = registry.get(name)()
-    if not instances:
-        raise ValueError("no valid parsers")
+    unknown = [n for n in parsers if n not in registry]
+    if unknown:
+        raise ValueError(
+            f"unknown parser name(s): {unknown}. Available: {registry.names()}"
+        )
+    instances: dict[str, ParseProvider] = {n: registry.get(n)() for n in parsers}
 
     all_records: list[ParseRecord] = []
     t0 = time.time()
