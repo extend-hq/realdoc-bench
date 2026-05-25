@@ -2,8 +2,7 @@
 
 PaddleOCR-VL doesn't
 have an OpenAI-compatible vLLM serving path, so realdoc-bench talks to a thin
-FastAPI wrapper around ``paddleocr.PaddleOCRVL`` (typically on awsl4 port
-8001, exposed via SSH tunnel).
+FastAPI wrapper around ``paddleocr.PaddleOCRVL`` (default port 8001).
 
 The server returns ``{"blocks": [{"label", "content", "bbox":[l,t,r,b]},
 "width", "height"]}``; this adapter maps PaddleOCR-VL labels into

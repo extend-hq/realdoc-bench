@@ -1,10 +1,10 @@
 """Paddle PP-Structure V3 layout processor.
 
 PP-Structure V3 is
-hosted as an HTTP endpoint (Ray Model Server or self-hosted equivalent on
-``awsl4``). Configure via env:
+hosted as an HTTP endpoint (Ray Model Server or self-hosted equivalent).
+Configure via env:
 
-- ``PADDLE_STRUCTURE_BASE_URL`` — endpoint root, e.g. ``http://awsl4:8080``
+- ``PADDLE_STRUCTURE_BASE_URL`` — endpoint root, e.g. ``http://localhost:8080``
 - ``PADDLE_STRUCTURE_AUTH_TOKEN`` — optional bearer token
 
 The processor uploads the image as multipart/form-data and parses the JSON

@@ -1,8 +1,7 @@
 """Self-hosted OSS layout VLM: rednote-hilab/dots.mocr 1.5.
 
-Hits a vLLM
-OpenAI-compatible endpoint (typically `vllm serve rednote-hilab/dots.mocr`
-on awsl4 port 8000, exposed via SSH tunnel).
+Hits a vLLM OpenAI-compatible endpoint
+(e.g. ``vllm serve rednote-hilab/dots.mocr``, default port 8000).
 
 Configure via env:
 - ``DOTS_OCR_BASE_URL`` — vLLM base URL, default ``http://localhost:8000/v1``
@@ -201,10 +200,10 @@ class DotsOcrLayout(LayoutProcessor):
     def __init__(self) -> None:
         self._client: Any | None = None
 
-    # Connection errors are common when the vLLM endpoint is reached over an
-    # SSH tunnel that can flap. Retry the whole request a few times with
-    # backoff; rebuild the client each attempt so a dropped connection pool
-    # doesn't poison subsequent calls.
+    # Connection errors are common against a self-hosted vLLM endpoint whose
+    # link can flap. Retry the whole request a few times with backoff; rebuild
+    # the client each attempt so a dropped connection pool doesn't poison
+    # subsequent calls.
     max_retries: int = 6
     retry_backoff_sec: float = 5.0
 
