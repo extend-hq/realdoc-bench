@@ -19,11 +19,6 @@ dist/
 # Run outputs (gitignored, regenerated per invocation)
 runs/
 
-# Internal dataset blobs — fetched from HF, never committed
-datasets/extraction/v0/sources/
-datasets/extraction/v1-public/sources/
-datasets/layout/blobs/
-
 # IDE
 .idea/
 .vscode/
@@ -31,21 +26,3 @@ datasets/layout/blobs/
 # Local OS junk
 .DS_Store
 .claude/
-
-# Customer-private docs + schemas — never commit (only laundered derivatives in v1_<type>/ may be committed)
-datasets/extraction/v1-customer/
-
-# Pulled public docs — track URLs in manifest, but keep large PDFs out of git for now
-datasets/extraction/v1_*/sources/
-datasets/extraction/v1_review/
-datasets/extraction/_rejected/
-datasets/extraction/_quarantine_confidentiality_stamp/
-datasets/extraction/_quarantine_wrong_doctype/
-datasets/extraction/v1_*/synthetic/
-datasets/extraction/_personas/
-
-# benchmark-construction scripts — kept local, not shared publicly
-construction/
-
-# baseten deploy/training scaffolding — local only
-baseten/
