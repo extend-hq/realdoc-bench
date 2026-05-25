@@ -32,7 +32,7 @@ uv sync
 
 ## API Keys
 
-All secrets load from `.env` at the repo root (auto-loaded by the CLI). Keys needed per command:
+All secrets load from `.env` (or `.env.local` for machine-specific overrides; gitignored, wins on conflict) at the repo root — auto-loaded by the CLI. See [`.env.example`](.env.example) for the full list of supported variables. Keys needed per command:
 
 - `score` — `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
 - `parse` — whatever the parsers require: `ANTHROPIC_API_KEY`, `EXTEND_API_KEY`, `LLAMA_CLOUD_API_KEY`, AWS / Azure creds, …
@@ -138,7 +138,8 @@ The layout set ships its `manifest.csv` (page list + per-page metadata) alongsid
 
 ## License
 
-Code: Apache-2.0. Schemas and ground-truth answers: CC-BY-4.0. Source documents in `v1-public/sources/` carry per-doc licenses tracked in `SOURCES.md`.
+- Code in this repo: Apache-2.0 (see `LICENSE`).
+- Benchmark datasets live on Hugging Face and carry their own licenses — see the dataset pages: [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench), [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout).
 
 ## Adding a provider
 

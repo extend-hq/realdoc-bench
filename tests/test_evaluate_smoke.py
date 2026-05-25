@@ -43,6 +43,22 @@ def _stub_extract(question: str, template: str, markdown: str):
     return {"answer": "stub"}
 
 
+def _explode(*a, **k):
+    raise AssertionError("gemini_extract called on a fully-cached run")
+
+
+@pytest.fixture(autouse=True)
+def _fake_gemini_key(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Satisfy run_score's _api_key() preflight without a real key.
+
+    WARNING: this fixture only sets the env var. Any new test that exercises
+    a path which calls ``gemini_extract`` MUST also monkeypatch it with a
+    stub (see existing tests for the pattern), otherwise the test will make
+    a real network call to the Gemini API.
+    """
+    monkeypatch.setenv("GEMINI_API_KEY", "test")
+
+
 @pytest.fixture
 def smoke_run(tmp_path: Path) -> RunLayout:
     layout = RunLayout.at(tmp_path / "smoke")
@@ -69,7 +85,7 @@ def smoke_run(tmp_path: Path) -> RunLayout:
     return layout
 
 
-def test_parse_then_score_then_report(smoke_run: RunLayout):
+def test_parse_then_score_then_report(smoke_run: RunLayout, monkeypatch: pytest.MonkeyPatch):
     assert "stub_parser" in registry
 
     parse_recs = ev_parse.run_parse(smoke_run, ["stub_parser"], workers=2,
@@ -78,9 +94,9 @@ def test_parse_then_score_then_report(smoke_run: RunLayout):
     assert all(r.ok for r in parse_recs)
     assert (smoke_run.parser_dir("stub_parser") / "doc_a.md").exists()
 
+    monkeypatch.setattr(ev_score, "gemini_extract", _stub_extract)
     score_recs = ev_score.run_score(
         smoke_run, ["stub_parser"], workers=2, progress=False,
-        extract=_stub_extract,
     )
     assert len(score_recs) == 4
     assert all(r.ok and r.match for r in score_recs)
@@ -88,12 +104,9 @@ def test_parse_then_score_then_report(smoke_run: RunLayout):
     assert len(cache_files) == 4
 
     # Second call must be entirely cache-served, NO model calls.
-    def _explode(*a, **k):
-        raise AssertionError("extract called on a fully-cached run")
-
+    monkeypatch.setattr(ev_score, "gemini_extract", _explode)
     score_recs2 = ev_score.run_score(
         smoke_run, ["stub_parser"], workers=2, progress=False,
-        extract=_explode,
     )
     assert all(r.cached and r.match for r in score_recs2)
 
@@ -101,8 +114,7 @@ def test_parse_then_score_then_report(smoke_run: RunLayout):
     # alone (verified by reading mtimes).
     mtimes_before = {f.name: f.stat().st_mtime for f in cache_files}
     # No second parser exists; just rerun and confirm mtimes unchanged.
-    ev_score.run_score(smoke_run, ["stub_parser"], workers=2, progress=False,
-                       extract=_explode)
+    ev_score.run_score(smoke_run, ["stub_parser"], workers=2, progress=False)
     for f in cache_files:
         assert f.stat().st_mtime == mtimes_before[f.name]
 
@@ -112,18 +124,18 @@ def test_parse_then_score_then_report(smoke_run: RunLayout):
     assert "stub_parser" in html or "PyMuPDF" in html or "Stub" in html or "summary" in html
 
 
-def test_score_defaults_to_parsed_parsers(smoke_run: RunLayout):
+def test_score_defaults_to_parsed_parsers(smoke_run: RunLayout, monkeypatch: pytest.MonkeyPatch):
     ev_parse.run_parse(smoke_run, ["stub_parser"], workers=2, progress=False)
+    monkeypatch.setattr(ev_score, "gemini_extract", _stub_extract)
     # No -p list → should auto-pick "stub_parser" from parses/
-    recs = ev_score.run_score(smoke_run, None, workers=2, progress=False,
-                               extract=_stub_extract)
+    recs = ev_score.run_score(smoke_run, None, workers=2, progress=False)
     assert {r.parser for r in recs} == {"stub_parser"}
 
 
-def test_score_rescore_on_cache_hit(smoke_run: RunLayout):
+def test_score_rescore_on_cache_hit(smoke_run: RunLayout, monkeypatch: pytest.MonkeyPatch):
     ev_parse.run_parse(smoke_run, ["stub_parser"], workers=2, progress=False)
-    ev_score.run_score(smoke_run, ["stub_parser"], workers=2, progress=False,
-                        extract=_stub_extract)
+    monkeypatch.setattr(ev_score, "gemini_extract", _stub_extract)
+    ev_score.run_score(smoke_run, ["stub_parser"], workers=2, progress=False)
     # Corrupt one cache entry to look like a wrong answer; re-run with same
     # gold; the cached answer is still the wrong one and must STAY wrong
     # (re-scoring against unchanged gold).
@@ -135,7 +147,7 @@ def test_score_rescore_on_cache_hit(smoke_run: RunLayout):
     a_cache.write_text(json.dumps(rec))
 
     recs = ev_score.run_score(smoke_run, ["stub_parser"], workers=2,
-                               progress=False, extract=_stub_extract)
+                               progress=False)
     # The corrupt entry should now read back as cached, but re-scored to a miss.
     corrupted = [r for r in recs if r.qid == "q_0"][0]
     assert corrupted.cached
