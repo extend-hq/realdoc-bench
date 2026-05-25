@@ -140,7 +140,3 @@ The layout set ships its `manifest.csv` (page list + per-page metadata) alongsid
 
 - Code in this repo: Apache-2.0 (see `LICENSE`).
 - Benchmark datasets live on Hugging Face and carry their own licenses — see the dataset pages: [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench), [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout).
-
-## Adding a provider
-
-See [`docs/adding_a_parser.md`](docs/adding_a_parser.md) (extraction) and [`docs/adding_a_layout_processor.md`](docs/adding_a_layout_processor.md). Each is roughly 150 LOC + a smoke test.
