@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -31,6 +32,7 @@ from realdoc_bench.layout.processors.base import registry as proc_registry
 from realdoc_bench.layout.reports.snapshot import write_full as write_layout_report
 from realdoc_bench.layout.runner import aggregate_summary as layout_aggregate
 from realdoc_bench.layout.runner import run as layout_run
+from realdoc_bench.shared.registry import Registry
 
 console = Console()
 
@@ -166,14 +168,15 @@ def layout_report(
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
-# Convention: every CLI command pulls .env from the current working directory
-# so API keys are picked up without an explicit env var.
+# Shared by both `evaluate` and `layout` command groups.
 
 def _env() -> None:
+    # Load .env.local first so its values win (load_dotenv skips already-set vars).
+    load_dotenv(Path.cwd() / ".env.local")
     load_dotenv(Path.cwd() / ".env")
 
 
-def _validate_plugin_names(names: list[str], registry, kind: str) -> None:
+def _validate_plugin_names(names: list[str], registry: Registry[Any], kind: str) -> None:
     unknown = [n for n in names if n not in registry]
     if unknown:
         raise typer.BadParameter(
@@ -358,7 +361,7 @@ def evaluate_run(
     set for a smoke run."""
     _env()
     _validate_plugin_names(parser, parser_registry, "parser")
-    ev_score._api_key()  # fail fast if GEMINI_API_KEY missing — before parsing
+    ev_score.require_api_key()  # fail fast if GEMINI_API_KEY missing — before parsing
     layout = RunLayout.at(run_dir)
 
     console.rule("[1/3] parse")

@@ -25,7 +25,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 import httpx
 from rapidfuzz import fuzz
@@ -200,7 +200,7 @@ def build_template(rf: str, gold_dict: dict) -> str:
 
 
 # ── Gemini ─────────────────────────────────────────────────────────────────
-def _api_key() -> str:
+def require_api_key() -> str:
     k = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
     if not k:
         raise RuntimeError("GEMINI_API_KEY / GOOGLE_API_KEY not set")
@@ -226,7 +226,7 @@ def gemini_extract(question: str, template: str, markdown: str,
     own_client = client is None
     c = client or httpx.Client(timeout=300)
     try:
-        r = c.post(url, params={"key": _api_key()}, json=body)
+        r = c.post(url, params={"key": require_api_key()}, json=body)
         r.raise_for_status()
         raw = r.json()
     finally:
@@ -271,11 +271,8 @@ def _ensure_template(item: dict) -> None:
         item["str_keys"] = string_keys(item["template"])
 
 
-_ExtractFn = Callable[[str, str, str], Any]
-
-
 def _worker(item: dict, parser: str, layout: RunLayout, *,
-            force: bool, extract: _ExtractFn) -> ScoreRecord:
+            force: bool) -> ScoreRecord:
     qid = item["question_id"]
     sf = item["source_file"]
     cache = layout.cache_path(qid, parser)
@@ -317,7 +314,7 @@ def _worker(item: dict, parser: str, layout: RunLayout, *,
     md = md_path.read_text()
     for attempt in range(3):
         try:
-            ans = extract(item["question"], item["template"], md)
+            ans = gemini_extract(item["question"], item["template"], md)
             break
         except Exception as e:  # noqa: BLE001
             if attempt == 2:
@@ -372,13 +369,15 @@ def docs_for_items(items: list[dict]) -> list[str]:
 def run_score(layout: RunLayout, parsers: list[str] | None = None, *,
               bank_path: Path | None = None, force: bool = False,
               workers: int = 16, limit: int | None = None,
-              extract: _ExtractFn | None = None,
               progress: bool = True) -> list[ScoreRecord]:
     """Score every (item × parser) pair against the bank. When `parsers` is
-    falsy, scores every parser found under `<run-dir>/parses/`."""
+    falsy, scores every parser found under `<run-dir>/parses/`.
+
+    Tests stub the model call by monkeypatching :func:`gemini_extract`
+    (and setting ``GEMINI_API_KEY`` in the test env to satisfy the preflight).
+    """
     layout.ensure_dirs()
-    if extract is None:
-        _api_key()  # fail fast on missing GEMINI_API_KEY before spinning up the worker pool
+    require_api_key()  # fail fast on missing GEMINI_API_KEY before spinning up the worker pool
     bank_path = bank_path or layout.bank_path
     if not bank_path.exists():
         raise FileNotFoundError(f"no bank at {bank_path}")
@@ -392,7 +391,6 @@ def run_score(layout: RunLayout, parsers: list[str] | None = None, *,
             f"no parsers given and no parses under {layout.parses_root} — "
             f"run `evaluate parse` first or pass -p")
 
-    extract = extract or gemini_extract
     jobs = [(it, p) for it in items for p in parsers]
     if progress:
         print(f"{len(items)} questions × {len(parsers)} parsers = "
@@ -402,7 +400,7 @@ def run_score(layout: RunLayout, parsers: list[str] | None = None, *,
     t0 = time.time()
     with ThreadPoolExecutor(max_workers=workers) as ex:
         futs = [ex.submit(_worker, it, p, layout,
-                          force=force, extract=extract) for it, p in jobs]
+                          force=force) for it, p in jobs]
         n_cached = 0
         for i, fut in enumerate(as_completed(futs), 1):
             rec = fut.result()
