@@ -8,10 +8,9 @@ machine-readable fields instead:
 - `gold_dict` — the gold value parsed into the matching JSON types,
                  e.g. {"amount": 12800}
 
-`jsonify_bank(items) -> items` mutates each item in place. Ported verbatim
-from construction/jsonify_bank.py — the type vocabulary and `_to_value` rules
-are intentionally identical so banks jsonified by either version compare
-equal.
+`jsonify_bank(items) -> items` mutates each item in place. The type
+vocabulary and `_to_value` rules are intentionally stable across bank
+revisions so the same item always jsonifies to an identical template.
 
 Library-only; no CLI verb. The current bank ships pre-jsonified, so this is
 used when a new bank rev lands.
@@ -149,8 +148,7 @@ def _to_value(raw: Any, type_hint: str) -> Any:
 
 def widen_types_from_gold(key_types: dict[str, str], gold: dict[str, Any]) -> None:
     """Widen a key's type when the gold value doesn't fit the declared type so
-    the template never forces the model into a format the gold can't match.
-    See the original jsonify_bank.py for the three widening rules."""
+    the template never forces the model into a format the gold can't match."""
     for k, v in list(gold.items()):
         ht = key_types.get(k, "")
         base = ht.replace(" | null", "").strip()

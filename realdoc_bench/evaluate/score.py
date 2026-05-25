@@ -43,7 +43,7 @@ DEFAULT_MODEL = "gemini-3-flash-preview"
 FUZZ_THRESHOLD = 92      # rapidfuzz ratio above which strings count as equal
 FUZZ_MIN_WORDS = 5       # min word count on EITHER side for fuzzy to apply
 
-# ── Extractor system prompt — verbatim from construction/json_eval.py ──────
+# ── Extractor system prompt — the canonical typed-extraction prompt ────────
 SYSTEM_PROMPT = (
     "You are extracting structured answers from document-parser markdown. "
     "Read the markdown only -- never use outside knowledge. "
