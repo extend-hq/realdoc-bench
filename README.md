@@ -11,7 +11,7 @@ A document parsing benchmark that measures two things on real documents:
 
 Each mode reports cost and latency alongside quality.
 
-## Full Leaderboard (1,359 questions)
+## Document QA Leaderboard (1,359 questions)
 
 | Parser | Per-field Accuracy | Per-question Accuracy |
 | --- | ---: | ---: |
@@ -24,6 +24,15 @@ Each mode reports cost and latency alongside quality.
 | Azure DI | 88.8% | 78.9% |
 | Reducto | 88.5% | 80.2% |
 | AWS Textract | 70.5% | 53.6% |
+
+## Layout Leaderboard
+| **Model** | **N** | **Strict F1** | **Adjusted F1** | **Macro F1** | **Precision** | **Recall** |
+| --- | --- | --- | --- | --- | --- | --- |
+| **extend_v2** | 1500 | **0.781** | **0.847** | 0.702 | 0.818 | 0.748 |
+| **aws_textract** | 1500 | **0.626** | **0.709** | 0.526 | 0.598 | 0.656 |
+| **paddle_ocr_vl** | 1500 | **0.584** | **0.684** | 0.450 | 0.661 | 0.524 |
+| **azure_di** | 1500 | **0.558** | **0.687** | 0.521 | 0.492 | 0.644 |
+| **dots_ocr** | 1500 | **0.238** | **0.320** | 0.188 | 0.225 | 0.253 |
 
 ## Installation
 ```bash
@@ -40,7 +49,7 @@ All secrets load from `.env` (or `.env.local` for machine-specific overrides; gi
 
 **Dataset overrides** — point `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` at a local snapshot to skip the HF download.
 
-## QA-extraction benchmark — `evaluate`
+## QA-extraction benchmark
 
 The full pipeline is download → parse → score → report. Every stage is per-parser scoped, cached, and reusable.
 
@@ -85,7 +94,7 @@ runs/qa/
 
 **API keys** — see [API Keys](#api-keys). `score` needs `GEMINI_API_KEY`, `parse` needs whatever the parsers require, `download` needs `HF_TOKEN`.
 
-## Layout benchmark — `layout`
+## Layout benchmark
 
 ```bash
 # 1. Run one or more processors over the layout dataset and score every page
@@ -97,7 +106,7 @@ realdoc-bench layout report --run-id <id>
 
 `--dataset` defaults to `Extend-AI/RealDocBench-Layout` and can be omitted; pass a different HF repo id to point at another snapshot. Set `HF_TOKEN` for private repos.
 
-### Scorer — `--scorer {f1,adjacency}`
+### Scorer
 
 Two scorers are wired into `layout eval`; both build on a Hungarian matcher.
 
@@ -108,7 +117,7 @@ Two scorers are wired into `layout eval`; both build on a Hungarian matcher.
 realdoc-bench layout eval -p extend_v2_0_0_beta --limit 50 --scorer adjacency
 ```
 
-The adjacency scorer also has a Python API and a standalone re-score CLI:
+The adjacency scorer also has a Python API and a re-score command that re-scores an existing run's cached predictions (no model calls):
 
 ```python
 from realdoc_bench.layout.metrics.adjacency import score_pairs
@@ -117,7 +126,7 @@ print(result.strict.micro_f1, result.adjusted.micro_f1)
 ```
 
 ```bash
-python -m realdoc_bench.layout.metrics.adjacency.rescore --run-id <id> --merge-profile extended --ignore-mode exclude_matching
+realdoc-bench layout rescore --run-id <id> --merge-profile extended --ignore-mode exclude_matching
 ```
 
 ### Assumptions
@@ -129,7 +138,7 @@ python -m realdoc_bench.layout.metrics.adjacency.rescore --run-id <id> --merge-p
 
 ## Datasets
 
-Distributed via the [Hugging Face Hub](https://huggingface.co/Extend-AI) under the `Extend-AI` org. Private during development; gated by a one-time legal review for the public sets.
+Distributed via the [Hugging Face Hub](https://huggingface.co/Extend-AI) under the `Extend-AI` org.
 
 - [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) — 1,500-page layout benchmark with COCO annotations.
 - [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench) — QA-extraction bench (1,359 questions × 581 documents, private). What `evaluate download` pulls.

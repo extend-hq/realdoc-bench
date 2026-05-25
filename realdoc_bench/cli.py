@@ -28,6 +28,7 @@ from realdoc_bench.evaluate.dotenv import load_dotenv
 from realdoc_bench.evaluate.runs import RunLayout
 from realdoc_bench.layout import processors as _processors  # noqa: F401
 from realdoc_bench.layout.data.loader import DEFAULT_HF_DATASET as DEFAULT_LAYOUT_DATASET
+from realdoc_bench.layout.metrics.adjacency import rescore as adjacency_rescore
 from realdoc_bench.layout.processors.base import registry as proc_registry
 from realdoc_bench.layout.reports.snapshot import write_full as write_layout_report
 from realdoc_bench.layout.runner import aggregate_summary as layout_aggregate
@@ -165,6 +166,42 @@ def layout_report(
     out_dir = out_dir or (run_dir / run_id / "reports")
     md_path = write_layout_report(summary, aggregates, out_dir)
     console.print(f"report: {md_path}")
+
+
+@layout_app.command("rescore")
+def layout_rescore(
+    run_id: str = typer.Option(..., "--run-id", help="Run directory name under --run-dir."),
+    run_dir: Path = typer.Option(Path("runs"), "--run-dir"),
+    processor: list[str] | None = typer.Option(
+        None, "--processor", "-p",
+        help="Processor to score (repeatable). Default: every processor in the run."),
+    merge_profile: str = typer.Option(
+        "none", "--merge-profile",
+        help=f"Class-merge profile applied to preds + GT. One of {adjacency_rescore.MERGE_PROFILES}."),
+    ignore_mode: str = typer.Option(
+        "disabled", "--ignore-mode",
+        help=f"Ignore-filter mode for header/footer/caption block types. One of {adjacency_rescore.IGNORE_MODES}."),
+    iou: float = typer.Option(0.5, "--iou", help="IoU match threshold."),
+    gap_threshold: float = typer.Option(0.02, "--gap-threshold", help="Adjacency gap fraction."),
+    limit: int | None = typer.Option(None, "--limit", help="Score only the first N samples."),
+    split: list[str] | None = typer.Option(None, "--split", help="Restrict to dataset split(s)."),
+) -> None:
+    """Re-score an existing layout run with the Hungarian + adjacency metric.
+
+    Reads each run's cached prediction.json and re-scores against ground truth
+    with adjacency split/merge recovery — no model calls, no re-running parsers.
+    """
+    _env()
+    try:
+        missing = adjacency_rescore.run_rescore(
+            run_dir=run_dir, run_id=run_id, processors=processor or [],
+            splits=split, limit=limit, merge_profile=merge_profile,
+            ignore_mode=ignore_mode, iou_threshold=iou, gap_threshold=gap_threshold,
+        )
+    except (FileNotFoundError, ValueError) as e:
+        raise typer.BadParameter(str(e)) from e
+    if missing:
+        raise typer.Exit(1)
 
 
 # ── Helpers ─────────────────────────────────────────────────────────────────
