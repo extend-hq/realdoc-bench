@@ -11,11 +11,7 @@ from collections.abc import Sequence
 
 import numpy as np
 
-from realdoc_bench.layout.normalizers.base import BBox, LayoutBlock
-
-
-def bbox_area(box: BBox) -> int:
-    return box.area()
+from realdoc_bench.layout.normalizers.base import BBox
 
 
 def iou(a: BBox, b: BBox) -> float:
@@ -52,10 +48,3 @@ def iou_matrix(boxes_a: Sequence[BBox], boxes_b: Sequence[BBox]) -> np.ndarray:
     with np.errstate(divide="ignore", invalid="ignore"):
         iou_mat = np.where(union > 0.0, inter / union, 0.0)
     return iou_mat.astype(np.float32)
-
-
-def iou_blocks(a: LayoutBlock, b: LayoutBlock) -> float:
-    """IoU between two layout blocks using bbox only."""
-    if a.bbox is None or b.bbox is None:
-        return 0.0
-    return iou(a.bbox, b.bbox)
