@@ -7,7 +7,7 @@
 A document parsing benchmark that measures two things on real documents:
 
 1. **Layout quality** — bounding-box and block-type predictions versus human annotation, with F1, adjusted F1, mAP, and per-block-type breakdowns.
-2. **QA extraction quality** — for each (question, parser) pair, an LLM extractor is asked to answer the question from the parser's markdown alone. Per-field scoring with `deep_equal` against a typed-JSON gold (with a conservative fuzzy fall-back for plain-string fields).
+2. **QA extraction quality** — for each (question, parser) pair, an LLM extractor (**Gemini 3 Flash**) is asked to answer the question from the parser's markdown alone. Per-field scoring with `deep_equal` against a typed-JSON gold (with a conservative fuzzy fall-back for plain-string fields).
 
 Each mode reports cost and latency alongside quality.
 
@@ -53,6 +53,8 @@ All secrets load from `.env` (or `.env.local` for machine-specific overrides; gi
 
 The full pipeline is download → parse → score → report. Every stage is per-parser scoped, cached, and reusable.
 
+**QA Evaluator** — the extraction step uses **Gemini 3 Flash** (`gemini-3-flash-preview`) for every parser. It reads only the parser's markdown, emits typed JSON, and that JSON is scored deterministically with `deep_equal` against the gold — the model never sees the gold and never assigns a score itself. The same model and prompt are applied to every parser, so no parser is judged differently (including the `gemini_*` parsers, which are scored by the same judge as everyone else).
+
 ```bash
 # 1. Pull the bench dataset (qa_bank.json + docs/) from the HF Hub
 realdoc-bench evaluate download --run-dir runs/qa --dataset Extend-AI/Realdoc-Bench
@@ -60,7 +62,7 @@ realdoc-bench evaluate download --run-dir runs/qa --dataset Extend-AI/Realdoc-Be
 # 2. Parse every PDF with one or more parsers (idempotent; --force to re-parse)
 realdoc-bench evaluate parse --run-dir runs/qa -p reducto -p aws_textract -p azure_di
 
-# 3. Score every (question × parser) pair with Gemini deep_equal
+# 3. Score every (question × parser) pair with Gemini 3 Flash + deep_equal
 #    No -p means: score every parser found under <run-dir>/parses/
 realdoc-bench evaluate score --run-dir runs/qa
 
