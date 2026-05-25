@@ -52,26 +52,3 @@ def fetch_dataset(
             token=auth,
         )
     )
-
-
-def upload_dataset(
-    name: str,
-    *,
-    folder: Path,
-    private: bool = True,
-    token: str | None = None,
-    commit_message: str = "Update realdoc-bench dataset",
-) -> str:
-    """Push a local folder up to an HF dataset repo. Returns the commit URL."""
-    from huggingface_hub import HfApi, create_repo
-
-    auth = token or os.environ.get("HF_TOKEN")
-    api = HfApi(token=auth)
-    create_repo(name, repo_type="dataset", private=private, exist_ok=True, token=auth)
-    commit = api.upload_folder(
-        repo_id=name,
-        repo_type="dataset",
-        folder_path=str(folder),
-        commit_message=commit_message,
-    )
-    return commit.commit_url if hasattr(commit, "commit_url") else str(commit)

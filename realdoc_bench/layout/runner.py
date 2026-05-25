@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Literal
 
 from realdoc_bench.layout.data.loader import DEFAULT_HF_DATASET, LayoutSample, load
-from realdoc_bench.layout.metrics import ap as ap_metric
 from realdoc_bench.layout.metrics import structural_errors as struct
 from realdoc_bench.layout.metrics.f1 import PRF, aggregate, aggregate_per_class, evaluate, per_class
 from realdoc_bench.layout.metrics.adjacency import score_pairs
@@ -302,16 +301,4 @@ def aggregate_summary(summary: RunSummary) -> dict[str, dict]:
             "mean_cost_usd_per_page": (sum(costs) / len(costs)) if costs else None,
             "confidence_present": confidence_present,
         }
-    return out
-
-
-def compute_map_from_preds(
-    preds_by_proc_doc: dict[str, dict[str, list]],
-    gts_by_doc: dict[str, list],
-) -> dict[str, ap_metric.APResult]:
-    """Per-processor mAP given preds and shared GT."""
-    out: dict[str, ap_metric.APResult] = {}
-    for proc, preds_by_doc in preds_by_proc_doc.items():
-        _, mean = ap_metric.compute_map(preds_by_doc, gts_by_doc)
-        out[proc] = mean
     return out

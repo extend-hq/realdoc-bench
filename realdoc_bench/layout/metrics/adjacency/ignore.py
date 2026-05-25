@@ -71,27 +71,6 @@ def apply_ignore_filter(
     return kept, ignored
 
 
-def filter_ignored_from_metrics(
-    blocks: Sequence[LayoutBlock],
-) -> tuple[list[LayoutBlock], list[LayoutBlock]]:
-    """Separate blocks into those included in metrics and those excluded.
-
-    Args:
-        blocks: List of layout blocks (some may have ignore=True)
-
-    Returns:
-        Tuple of (included_blocks, excluded_blocks)
-    """
-    included = []
-    excluded = []
-    for b in blocks:
-        if b.ignore:
-            excluded.append(b)
-        else:
-            included.append(b)
-    return included, excluded
-
-
 def count_ignored_in_matches(
     matched_pairs: list[tuple[int, int]],
     preds: Sequence[LayoutBlock],
@@ -140,28 +119,3 @@ def adjust_metrics_for_ignored(
     adjusted_fn = fn - ignored_fn
 
     return max(0, adjusted_tp), max(0, adjusted_fp), max(0, adjusted_fn)
-
-
-def get_ignore_mode_from_config(config: dict | None) -> IgnoreMode:
-    """Extract ignore mode from configuration dictionary."""
-    if config is None:
-        return "include_exclude_metrics"
-
-    mode = config.get("ignore_mode", "include_exclude_metrics")
-    if mode not in ("exclude_matching", "include_exclude_metrics", "disabled"):
-        return "include_exclude_metrics"
-    return mode
-
-
-def get_ignored_types_from_config(config: dict | None) -> set[str]:
-    """Extract ignored block types from configuration dictionary."""
-    if config is None:
-        return IGNORABLE_BLOCK_TYPES
-
-    types = config.get("ignored_block_types")
-    if types is None:
-        return IGNORABLE_BLOCK_TYPES
-
-    if isinstance(types, (list, tuple)):
-        return set(types)
-    return IGNORABLE_BLOCK_TYPES
