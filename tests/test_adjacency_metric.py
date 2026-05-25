@@ -1,8 +1,8 @@
 """Tests for the adjacency layout-metric package.
 
-Exercises the Hungarian matcher, adjacency split/merge recovery, ignore
-filter, label-merge profiles, and the ``aggregate.score_pairs`` roll-up
-that builds dataset-level strict + adjusted F1 from per-page results.
+Exercises the Hungarian matcher, adjacency split/merge recovery, optional
+ignore filter, and the ``aggregate.score_pairs`` roll-up that builds
+dataset-level strict + adjusted F1 from per-page results.
 """
 
 from __future__ import annotations
@@ -10,14 +10,11 @@ from __future__ import annotations
 import pytest
 
 from realdoc_bench.layout.metrics.adjacency import (
-    CORE5_MERGE,
-    EXTENDED_MERGE,
     IGNORABLE_BLOCK_TYPES,
     AggregateResult,
     ClassScore,
     LayoutEvaluationResult,
     apply_ignore_filter,
-    apply_merge_profile,
     evaluate_layout_detection,
     get_adjusted_blocks,
     match_blocks,
@@ -287,54 +284,59 @@ class TestLayoutEvaluationResult:
 
 
 # =============================================================================
-# Label-merge profiles
-# =============================================================================
-
-
-class TestLabelMerge:
-    def test_extended_profile_folds_table_caption(self):
-        blocks = [nb("table_caption", 0, 0, 10, 10), nb("page_number", 0, 20, 10, 10)]
-        merged = apply_merge_profile(blocks, "extended")
-        assert merged[0].block_type == "figure_caption"  # table_caption → figure_caption
-        assert merged[1].block_type == "text"  # page_number → text
-
-    def test_full_profile_is_identity(self):
-        blocks = [nb("list_item", 0, 0, 10, 10)]
-        merged = apply_merge_profile(blocks, "full")
-        assert merged[0].block_type == "list_item"
-
-    def test_profile_dicts_present(self):
-        assert CORE5_MERGE["list_item"] == "text"
-        assert EXTENDED_MERGE["page_number"] == "text"
-
-
-# =============================================================================
-# Ignore filter
+# Ignore filter (default set is empty under the public 9-class vocab; the
+# filter is now a per-study knob, exercised here with an explicit set).
 # =============================================================================
 
 
 class TestIgnoreFilter:
+    def test_default_ignorable_set_empty(self):
+        # Under the public 9-class taxonomy every surviving class is meaningful,
+        # so the default ignore set is empty; callers opt in explicitly.
+        assert IGNORABLE_BLOCK_TYPES == set()
+
     def test_disabled_keeps_everything(self):
-        blocks = [nb("text", 0, 0, 10, 10), nb("footnote", 0, 20, 10, 10)]
+        blocks = [nb("text", 0, 0, 10, 10), nb("header", 0, 20, 10, 10)]
         kept, ignored = apply_ignore_filter(blocks, "disabled")
         assert len(kept) == 2 and ignored == []
 
-    def test_exclude_matching_drops_ignorable(self):
-        blocks = [nb("text", 0, 0, 10, 10), nb("footnote", 0, 20, 10, 10)]
-        kept, ignored = apply_ignore_filter(blocks, "exclude_matching")
+    def test_exclude_matching_with_explicit_set(self):
+        blocks = [nb("text", 0, 0, 10, 10), nb("header", 0, 20, 10, 10)]
+        kept, ignored = apply_ignore_filter(blocks, "exclude_matching", {"header"})
         assert [b.block_type for b in kept] == ["text"]
-        assert [b.block_type for b in ignored] == ["footnote"]
+        assert [b.block_type for b in ignored] == ["header"]
 
     def test_include_exclude_metrics_flags_ignorable(self):
-        blocks = [nb("text", 0, 0, 10, 10), nb("footnote", 0, 20, 10, 10)]
-        kept, ignored = apply_ignore_filter(blocks, "include_exclude_metrics")
+        blocks = [nb("text", 0, 0, 10, 10), nb("header", 0, 20, 10, 10)]
+        kept, ignored = apply_ignore_filter(blocks, "include_exclude_metrics", {"header"})
         assert len(kept) == 2
         flagged = {b.block_type: b.ignore for b in kept}
-        assert flagged["text"] is False and flagged["footnote"] is True
+        assert flagged["text"] is False and flagged["header"] is True
 
-    def test_default_ignorable_set(self):
-        assert "footnote" in IGNORABLE_BLOCK_TYPES
-        assert "figure_caption" in IGNORABLE_BLOCK_TYPES
+
+# =============================================================================
+# Legacy 18-class label coercion (so old prediction.json files still load).
+# =============================================================================
+
+
+class TestLegacyLabelCoercion:
+    def test_legacy_18class_labels_fold_into_9class(self):
+        cases = [
+            ("title", "heading"),
+            ("section_header", "section_heading"),
+            ("page_header", "header"),
+            ("page_footer", "footer"),
+            ("list_item", "text"),
+            ("formula", "text"),
+            ("footnote", "text"),
+            ("signature", "text"),
+            ("figure_caption", "text"),
+            ("table_cell", "table"),
+            ("barcode", "figure"),
+        ]
+        for legacy, public in cases:
+            b = nb(legacy, 0, 0, 10, 10)
+            assert b.block_type == public, f"{legacy!r} should coerce to {public!r}, got {b.block_type!r}"
 
 
 # =============================================================================

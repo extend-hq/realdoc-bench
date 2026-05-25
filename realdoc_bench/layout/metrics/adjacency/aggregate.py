@@ -5,9 +5,9 @@ The aggregation layer that turns per-page
 results into a dataset-level score table — strict + adjusted, micro + macro,
 and a per-class breakdown.
 
-This module only *accumulates* matcher outputs; it applies no class
-remapping or ignore filtering of its own — callers prepare the blocks first
-(e.g. via :func:`apply_merge_profile` / :func:`apply_ignore_filter`).
+This module only *accumulates* matcher outputs; it applies no ignore
+filtering of its own — callers prepare the blocks first (e.g. via
+:func:`apply_ignore_filter`).
 
 Roll-up definition:
 

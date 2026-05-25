@@ -12,15 +12,11 @@ from typing import Literal
 
 from realdoc_bench.layout.normalizers.base import LayoutBlock, LayoutBlockType
 
-# Default block types to ignore in evaluation
-# These are handled inconsistently by different models
-IGNORABLE_BLOCK_TYPES: set[LayoutBlockType] = {
-    "footnote",
-    "figure_caption",
-    "table_caption",
-    "figure_footnote",
-    "table_footer",
-}
+# Default block types to ignore in evaluation. Under the public 9-class
+# vocabulary every surviving class is meaningful, so the default set is
+# empty; callers can opt in to a per-study ignore list by passing
+# ``ignored_types`` explicitly to :func:`apply_ignore_filter`.
+IGNORABLE_BLOCK_TYPES: set[LayoutBlockType] = set()
 
 IgnoreMode = Literal["exclude_matching", "include_exclude_metrics", "disabled"]
 

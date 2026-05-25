@@ -116,7 +116,7 @@ Two scorers are wired into `layout eval`; both build on a Hungarian matcher.
 - **`adjacency`** — Hungarian on `1 − IoU + 0.25·type` (wrong-type pair stays TP, surfaced as `misclassifications`) with adjacency split/merge recovery; reports an additional **adjusted F1** that lets the matcher merge adjacent same-type fragments to recover from over/under-segmentation. See [`realdoc_bench/layout/metrics/adjacency/`](realdoc_bench/layout/metrics/adjacency/).
 
 ```bash
-realdoc-bench layout eval -p extend_v2_0_0_beta --limit 50 --scorer adjacency
+realdoc-bench layout eval -p extend_v2_0_0 --limit 50 --scorer adjacency
 ```
 
 The adjacency scorer also has a Python API and a re-score command that re-scores an existing run's cached predictions (no model calls):
@@ -128,11 +128,12 @@ print(result.strict.micro_f1, result.adjusted.micro_f1)
 ```
 
 ```bash
-realdoc-bench layout rescore --run-id <id> --merge-profile extended --ignore-mode exclude_matching
+realdoc-bench layout rescore --run-id <id>
 ```
 
 ### Assumptions
 
+- **Block-type vocabulary — 9 classes:** `text`, `heading`, `section_heading`, `header`, `footer`, `page_number`, `figure`, `table`, `key_value`. The dataset's raw COCO `category_id` integers are folded into these on load by `realdoc_bench/layout/normalizers/coco.py`; processor normalizers map vendor output into the same set. Legacy cached `prediction.json` files written under the previous 18-class names load unchanged — a Pydantic `field_validator` coerces them on read.
 - **Dataset:** [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) (1,500 pages, private) by default; override with `--dataset <repo-id>`. Manifest + image + COCO blobs all come from HF on first use (set `HF_TOKEN`, or `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` to a local snapshot).
 - **Matching:** axis-aligned IoU, threshold 0.5 (`--iou-threshold` to change). No confidence sweep — every prediction counts positive at IoU ≥ 0.5; mAP is computed separately when `confidence_present=True`.
 - **Adjusted F1 (adjacency only):** after the 1:1 match, unmatched same-type preds with gap < `0.02 × max(page_w, page_h)` are merged and re-scored; symmetric for unmatched GTs.

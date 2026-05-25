@@ -42,12 +42,15 @@ def _build_user_prompt(width: int, height: int) -> str:
     return f"""Analyze this document image ({width}x{height} pixels) and extract its layout and text content.
 
 Identify all blocks including:
-- text: paragraphs and body text
+- text: paragraphs and body text (including captions, footnotes, formulas, list items)
 - heading: document titles
 - section_heading: section headers
+- header: running page headers
+- footer: running page footers
+- page_number: page-number indicators
 - table: data tables (extract as a SINGLE table block per logical table)
-- figure: images and diagrams
-- figure_caption: captions for figures
+- figure: images, diagrams, charts, barcodes
+- key_value: form fields / key-value pairs
 
 For each block provide:
 1. Bounding box (left, top, right, bottom in PIXELS, between 0 and image dimensions)

@@ -27,7 +27,6 @@ DEFAULT_HF_DATASET = "Extend-AI/RealDocBench-Layout"
 @dataclass(frozen=True)
 class LayoutSample:
     page_id: str
-    split: str
     domain: str
     image_path: Path
     ground_truth: LayoutDocument
@@ -61,7 +60,6 @@ def load(
     manifest_path: Path | None = None,
     hf_dataset: str = DEFAULT_HF_DATASET,
     hf_revision: str | None = None,
-    splits: Iterable[str] | None = None,
     domains: Iterable[str] | None = None,
     limit: int | None = None,
 ) -> Iterator[LayoutSample]:
@@ -71,9 +69,6 @@ def load(
     """
     snapshot = fetch_dataset(hf_dataset, revision=hf_revision)
     rows = _read_manifest(manifest_path or snapshot / "manifest.csv")
-    if splits is not None:
-        keep_splits = set(splits)
-        rows = [r for r in rows if r["split"] in keep_splits]
     if domains is not None:
         keep_domains = set(domains)
         rows = [r for r in rows if r["domain"] in keep_domains]
@@ -94,7 +89,6 @@ def load(
         yielded += 1
         yield LayoutSample(
             page_id=page_id,
-            split=row["split"],
             domain=row["domain"],
             image_path=image_path,
             ground_truth=gt,

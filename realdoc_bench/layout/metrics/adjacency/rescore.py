@@ -7,8 +7,8 @@ realdoc-bench's own ``coco_eval`` / ``f1`` scorer.
 
 Exposed as the ``realdoc-bench layout rescore`` CLI command::
 
-    realdoc-bench layout rescore --run-id v500 --processor extend_v2_0_0_beta \\
-        --merge-profile extended --ignore-mode exclude_matching
+    realdoc-bench layout rescore --run-id v500 --processor extend_v2_0_0 \\
+        --ignore-mode exclude_matching
 
 If ``--processor`` is omitted every processor subdirectory under the run is
 scored. Ground truth is loaded through the standard dataset loader, so the
@@ -24,7 +24,6 @@ from pathlib import Path
 from realdoc_bench.layout.data.loader import load
 from realdoc_bench.layout.metrics.adjacency.aggregate import AggregateResult, MetricBreakdown, score_pairs
 from realdoc_bench.layout.metrics.adjacency.ignore import IGNORABLE_BLOCK_TYPES, apply_ignore_filter
-from realdoc_bench.layout.metrics.adjacency.label_merge import apply_merge_profile
 from realdoc_bench.layout.normalizers.base import LayoutBlock, LayoutDocument
 
 
@@ -47,14 +46,9 @@ def _page_dims(doc: LayoutDocument) -> tuple[int, int]:
     return w, h
 
 
-def _prepare(
-    blocks: list[LayoutBlock],
-    merge_profile: str,
-    ignore_mode: str,
-) -> list[LayoutBlock]:
-    """Apply the class-merge profile then the ignore filter (in that order)."""
-    if merge_profile != "none":
-        blocks = apply_merge_profile(blocks, merge_profile)  # type: ignore[arg-type]
+def _prepare(blocks: list[LayoutBlock], ignore_mode: str) -> list[LayoutBlock]:
+    """Apply the optional ignore filter (no class-merge step; the public
+    9-class taxonomy is already uniform)."""
     if ignore_mode != "disabled":
         blocks, _ = apply_ignore_filter(blocks, ignore_mode, set(IGNORABLE_BLOCK_TYPES))  # type: ignore[arg-type]
     return blocks
@@ -89,7 +83,6 @@ def rescore_processor(
     processor: str,
     samples: list,
     *,
-    merge_profile: str,
     ignore_mode: str,
     iou_threshold: float,
     gap_threshold: float,
@@ -102,8 +95,8 @@ def rescore_processor(
             continue
         pred_doc = LayoutDocument.model_validate_json(pred_path.read_text())
 
-        pred_blocks = _prepare(list(pred_doc.blocks), merge_profile, ignore_mode)
-        gt_blocks = _prepare(list(sample.ground_truth.blocks), merge_profile, ignore_mode)
+        pred_blocks = _prepare(list(pred_doc.blocks), ignore_mode)
+        gt_blocks = _prepare(list(sample.ground_truth.blocks), ignore_mode)
 
         pred_w, pred_h = _page_dims(pred_doc)
         gt_w, gt_h = _page_dims(sample.ground_truth)
@@ -117,7 +110,6 @@ def rescore_processor(
     return score_pairs(pairs, iou_threshold=iou_threshold, gap_threshold=gap_threshold)
 
 
-MERGE_PROFILES = ("none", "core5", "extended", "full")
 IGNORE_MODES = ("disabled", "exclude_matching", "include_exclude_metrics")
 
 
@@ -126,9 +118,7 @@ def run_rescore(
     run_dir: Path,
     run_id: str,
     processors: list[str],
-    splits: list[str] | None = None,
     limit: int | None = None,
-    merge_profile: str = "none",
     ignore_mode: str = "disabled",
     iou_threshold: float = 0.5,
     gap_threshold: float = 0.02,
@@ -141,8 +131,6 @@ def run_rescore(
     scored). Raises ``FileNotFoundError`` (missing run dir) or ``ValueError``
     (bad choice / no processors) on invalid input.
     """
-    if merge_profile not in MERGE_PROFILES:
-        raise ValueError(f"merge_profile must be one of {MERGE_PROFILES}, got {merge_profile!r}")
     if ignore_mode not in IGNORE_MODES:
         raise ValueError(f"ignore_mode must be one of {IGNORE_MODES}, got {ignore_mode!r}")
 
@@ -154,12 +142,12 @@ def run_rescore(
     if not procs:
         raise ValueError(f"no processors with prediction.json under {run_root}")
 
-    samples = list(load(splits=splits or None, limit=limit))
+    samples = list(load(limit=limit))
     print(
         f"Run {run_id}: {len(samples)} GT samples, processors {procs}\n"
         f"Metric: match_blocks_with_adjacency "
         f"(IoU={iou_threshold:.2f}, gap={gap_threshold}, "
-        f"merge_profile={merge_profile}, ignore_mode={ignore_mode})\n",
+        f"ignore_mode={ignore_mode})\n",
         file=sys.stderr,
     )
 
@@ -169,7 +157,6 @@ def run_rescore(
             run_root,
             proc,
             samples,
-            merge_profile=merge_profile,
             ignore_mode=ignore_mode,
             iou_threshold=iou_threshold,
             gap_threshold=gap_threshold,

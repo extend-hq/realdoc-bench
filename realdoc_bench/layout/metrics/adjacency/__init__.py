@@ -11,10 +11,9 @@ Layout:
   recovery. Strict + adjusted PRF in one pass.
 - ``aggregate.score_pairs`` — per-class / micro / macro roll-up over an
   iterable of per-page ``(preds, gts, page_w, page_h)`` tuples.
-- ``label_merge.apply_merge_profile`` — fold the GT taxonomy down to one
-  of ``core5`` / ``extended`` / ``full`` before matching.
-- ``ignore.apply_ignore_filter`` — drop/flag header-/footer-/caption-style
-  classes that are inconsistently labelled across processors.
+- ``ignore.apply_ignore_filter`` — optional configurable filter for block
+  types you want excluded from a particular study. Default ignore set is
+  empty under the public 9-class vocabulary.
 - ``rescore`` — module entrypoint to re-score an existing ``runs/`` tree
   without re-running the processors.
 
@@ -32,11 +31,6 @@ from realdoc_bench.layout.metrics.adjacency.ignore import (
     IGNORABLE_BLOCK_TYPES,
     apply_ignore_filter,
 )
-from realdoc_bench.layout.metrics.adjacency.label_merge import (
-    CORE5_MERGE,
-    EXTENDED_MERGE,
-    apply_merge_profile,
-)
 from realdoc_bench.layout.metrics.adjacency.layout import (
     LayoutEvaluationResult,
     MergeRecord,
@@ -48,8 +42,6 @@ from realdoc_bench.layout.metrics.adjacency.layout import (
 )
 
 __all__ = [
-    "CORE5_MERGE",
-    "EXTENDED_MERGE",
     "IGNORABLE_BLOCK_TYPES",
     "AggregateResult",
     "ClassScore",
@@ -57,7 +49,6 @@ __all__ = [
     "MergeRecord",
     "MetricBreakdown",
     "apply_ignore_filter",
-    "apply_merge_profile",
     "evaluate_layout_detection",
     "get_adjusted_blocks",
     "match_blocks",
