@@ -4,7 +4,7 @@
 
 # RealDocBench
 
-[![Realdoc-Bench on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Realdoc--Bench-yellow)](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench)
+[![Realdoc-Bench on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Realdoc--Bench-yellow)](https://huggingface.co/datasets/Extend-AI/RealDocBench)
 [![RealDocBench-Layout on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-RealDocBench--Layout-yellow)](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout)
 
 A document parsing benchmark that measures two things on real documents:
@@ -147,11 +147,11 @@ realdoc-bench layout rescore --run-id <id>
 Distributed via the [Hugging Face Hub](https://huggingface.co/Extend-AI) under the `Extend-AI` org.
 
 - [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout) — 1,500-page layout benchmark with COCO annotations.
-- [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench) — QA-extraction bench (1,359 questions × 581 documents). What `evaluate download` pulls.
+- [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/RealDocBench) — QA-extraction bench (1,359 questions × 581 documents). What `evaluate download` pulls.
 
 The layout set ships its `manifest.csv` (page list + per-page metadata) alongside `images/` and `annotations/` on HF.
 
 ## License
 
 - Code in this repo: Apache-2.0 (see `LICENSE`).
-- Benchmark datasets live on Hugging Face and carry their own licenses — see the dataset pages: [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench), [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout).
+- Benchmark datasets live on Hugging Face and carry their own licenses — see the dataset pages: [`Extend-AI/Realdoc-Bench`](https://huggingface.co/datasets/Extend-AI/RealDocBench), [`Extend-AI/RealDocBench-Layout`](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout).
