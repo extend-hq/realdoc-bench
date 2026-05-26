@@ -228,7 +228,7 @@ class OpenAIVisionParserBase(VisionParserBase):
                 it = getattr(usage, "prompt_tokens", 0) or 0 if usage else 0
                 ot = getattr(usage, "completion_tokens", 0) or 0 if usage else 0
                 return text, int(it), int(ot)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 last_err = e
                 self._client = None
                 if attempt + 1 < MAX_RETRIES:
@@ -287,7 +287,7 @@ class AnthropicVisionParserBase(VisionParserBase):
                 it = getattr(usage, "input_tokens", 0) or 0 if usage else 0
                 ot = getattr(usage, "output_tokens", 0) or 0 if usage else 0
                 return text, int(it), int(ot)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 last_err = e
                 msg = str(e).lower()
                 self._client = None
@@ -334,7 +334,7 @@ class GeminiVisionParserBase(VisionParserBase):
                 it = getattr(usage, "prompt_token_count", 0) or 0 if usage else 0
                 ot = getattr(usage, "candidates_token_count", 0) or 0 if usage else 0
                 return text, int(it), int(ot)
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 last_err = e
                 self._client = None
                 if attempt + 1 < MAX_RETRIES:
