@@ -131,7 +131,7 @@ class MyParser(ParseProvider):
 
 **3. Markdown is the whole contract.** Anything you want the scoring model to see — headings, tables, key/values — has to be in the markdown string. Tables can be markdown or HTML; the scorer handles both.
 
-**4. (Optional) Override `config_hash`** if your adapter has knobs (mode, model name, prompt) whose changes should bust the parse cache. See `reducto.py`'s parser for the pattern: hash name + version + all knobs.
+**4. (Optional) Override `config_hash`** if your adapter has knobs (mode, model name, prompt) whose changes should bust the parse cache. Mixing a content nonce into the hash is enough — any change to it invalidates cached parses.
 
 **5. Verify.**
 
