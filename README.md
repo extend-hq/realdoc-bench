@@ -102,6 +102,10 @@ runs/qa/
 ## Layout benchmark
 
 ```bash
+# 0. (optional) Pre-download the layout dataset — prewarm the HF cache,
+#    or materialize a filtered subset into --out-dir.
+realdoc-bench layout download --dataset Extend-AI/RealDocBench-Layout
+
 # 1. Run one or more processors over the layout dataset and score every page
 realdoc-bench layout eval --dataset Extend-AI/RealDocBench-Layout --processor gt_self --limit 5
 
@@ -109,7 +113,7 @@ realdoc-bench layout eval --dataset Extend-AI/RealDocBench-Layout --processor gt
 realdoc-bench layout report --run-id <id>
 ```
 
-`--dataset` defaults to `Extend-AI/RealDocBench-Layout` and can be omitted; pass a different HF repo id to point at another snapshot.
+`--dataset` defaults to `Extend-AI/RealDocBench-Layout` and can be omitted; pass a different HF repo id to point at another snapshot. `layout download` accepts the same `--dataset`/`--revision`, plus `--domain`/`--limit` to fetch a filtered slice and `--out-dir` to materialize the snapshot at a known path (point `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` at it to use it without re-downloading).
 
 ### Scorer
 

@@ -2,7 +2,8 @@
 
 Two top-level command groups:
 
-- ``layout``    — list processors, run a layout benchmark, render its report.
+- ``layout``    — list processors, download the layout dataset, run a layout
+                   benchmark, render its report.
 - ``evaluate``  — download a dataset, parse documents, score against the QA
                    bank, and build the dashboard.
 """
@@ -17,16 +18,18 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from realdoc_bench.evaluate import parse as ev_parse
+
 # Side-effect imports register all decorated parsers/processors.
 from realdoc_bench.evaluate import parsers as _parsers  # noqa: F401
-from realdoc_bench.evaluate.parsers.base import registry as parser_registry
-from realdoc_bench.evaluate import parse as ev_parse
 from realdoc_bench.evaluate import report as ev_report
 from realdoc_bench.evaluate import score as ev_score
-from realdoc_bench.evaluate.download import download_dataset
 from realdoc_bench.evaluate.dotenv import load_dotenv
+from realdoc_bench.evaluate.download import download_dataset
+from realdoc_bench.evaluate.parsers.base import registry as parser_registry
 from realdoc_bench.evaluate.runs import RunLayout
 from realdoc_bench.layout import processors as _processors  # noqa: F401
+from realdoc_bench.layout.data.download import download_dataset as layout_download_dataset
 from realdoc_bench.layout.data.loader import DEFAULT_HF_DATASET as DEFAULT_LAYOUT_DATASET
 from realdoc_bench.layout.metrics.adjacency import rescore as adjacency_rescore
 from realdoc_bench.layout.processors.base import registry as proc_registry
@@ -58,6 +61,44 @@ def layout_list() -> None:
         cls = proc_registry.get(name)
         table.add_row(name, getattr(cls, "version", ""))
     console.print(table)
+
+
+@layout_app.command("download")
+def layout_download(
+    dataset: str = typer.Option(
+        DEFAULT_LAYOUT_DATASET, "--dataset",
+        help="HF dataset repo id (e.g. Extend-AI/RealDocBench-Layout)",
+    ),
+    out_dir: Path | None = typer.Option(
+        None, "--out-dir",
+        help="Materialize the snapshot here. Omit to just prewarm the HF "
+             "cache. Point REALDOC_BENCH_DATASET_<NAME> at the dir to use "
+             "it without re-downloading.",
+    ),
+    revision: str | None = typer.Option(None, "--revision"),
+    domain: list[str] | None = typer.Option(
+        None, "--domain",
+        help="Filter to one or more manifest domains (repeatable).",
+    ),
+    limit: int | None = typer.Option(
+        None, "--limit",
+        help="Pull manifest + only the first N filtered rows' image/annotation.",
+    ),
+    force: bool = typer.Option(
+        False, "--force",
+        help="When --out-dir is set, wipe and re-download it.",
+    ),
+) -> None:
+    """Fetch the layout dataset (manifest + images + annotations) from HF."""
+    _env()
+    res = layout_download_dataset(
+        repo_id=dataset, out_dir=out_dir, revision=revision,
+        domains=domain, limit=limit, force=force,
+    )
+    console.print(
+        f"downloaded → {res['path']}: {res['images']} images, "
+        f"{res['annotations']} annotations"
+    )
 
 
 @layout_app.command("eval")
