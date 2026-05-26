@@ -23,6 +23,7 @@ dependencies = [
     "matplotlib>=3.9",
     "huggingface_hub>=0.24",
     "boto3>=1.34",
+    "azure-ai-documentintelligence>=1.0",
     "pymupdf>=1.24",
     "anthropic>=0.40",
     "google-genai>=0.3",

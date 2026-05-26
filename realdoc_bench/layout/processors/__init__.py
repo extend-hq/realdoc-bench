@@ -11,31 +11,26 @@ except ImportError:
     pass
 
 try:
-    from realdoc_bench.layout.processors import paddle_structure  # noqa: F401
-except ImportError:
-    pass
-
-try:
-    from realdoc_bench.layout.processors import claude  # noqa: F401
-except ImportError:
-    pass
-
-try:
-    from realdoc_bench.layout.processors import gemini  # noqa: F401
-except ImportError:
-    pass
-
-try:
-    from realdoc_bench.layout.processors import gpt  # noqa: F401
-except ImportError:
-    pass
-
-try:
     from realdoc_bench.layout.processors import dots_ocr  # noqa: F401
 except ImportError:
     pass
 
 try:
     from realdoc_bench.layout.processors import paddle_ocr_vl  # noqa: F401
+except ImportError:
+    pass
+
+try:
+    from realdoc_bench.layout.processors import paddle_structure  # noqa: F401
+except ImportError:
+    pass
+
+try:
+    from realdoc_bench.layout.processors import aws_textract  # noqa: F401
+except ImportError:
+    pass
+
+try:
+    from realdoc_bench.layout.processors import azure_di  # noqa: F401
 except ImportError:
     pass

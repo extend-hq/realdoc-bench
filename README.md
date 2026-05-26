@@ -15,7 +15,7 @@ Each mode reports cost and latency alongside quality.
 
 | Parser | Per-field Accuracy | Per-question Accuracy |
 | --- | ---: | ---: |
-| **Extend v2 - Performance** | **95.7%** | **90.3%** |
+| **Extend Parse 2.0 - Performance** | **95.7%** | **90.3%** |
 | LlamaParse (Agentic) | 92.1% | 84.3% |
 | Reducto (Agentic) | 91.1% | 83.1% |
 | Extend v1 | 90.4% | 81.8% |
@@ -28,11 +28,11 @@ Each mode reports cost and latency alongside quality.
 ## Layout Leaderboard
 | **Model** | **N** | **Strict F1** | **Adjusted F1** | **Macro F1** | **Precision** | **Recall** |
 | --- | --- | --- | --- | --- | --- | --- |
-| **extend_v2** | 1500 | **0.781** | **0.847** | 0.702 | 0.818 | 0.748 |
-| **aws_textract** | 1500 | **0.626** | **0.709** | 0.526 | 0.598 | 0.656 |
-| **paddle_ocr_vl** | 1500 | **0.584** | **0.684** | 0.450 | 0.661 | 0.524 |
-| **azure_di** | 1500 | **0.558** | **0.687** | 0.521 | 0.492 | 0.644 |
-| **dots_ocr** | 1500 | **0.238** | **0.320** | 0.188 | 0.225 | 0.253 |
+| **Extend Parse 2.0** | 1500 | **0.781** | **0.847** | 0.702 | 0.818 | 0.748 |
+| **AWS Textract** | 1500 | **0.626** | **0.709** | 0.526 | 0.598 | 0.656 |
+| **Paddle OCR VL 1.5** | 1500 | **0.584** | **0.684** | 0.450 | 0.661 | 0.524 |
+| **Azure DI** | 1500 | **0.558** | **0.687** | 0.521 | 0.492 | 0.644 |
+| **dots.mocr** | 1500 | **0.238** | **0.320** | 0.188 | 0.225 | 0.253 |
 
 ## Installation
 ```bash

@@ -1,7 +1,8 @@
-"""Extend layout processor adapters.
+"""Extend layout processor adapter.
 
-Wraps the Extend parse API in the ``LayoutProcessor`` interface. Multiple engine
-versions register as distinct processor names so the leaderboard can compare them.
+Wraps the Extend parse API in the ``LayoutProcessor`` interface. ``_ExtendBase``
+holds the shared upload/poll/normalize flow; ``ExtendV2`` is the published
+``extend_v2_0_0`` engine config.
 
 The Extend SDK is imported lazily so the package remains importable without the
 dependency installed (useful for offline tests). Set ``EXTEND_API_KEY``.
@@ -106,52 +107,6 @@ class ExtendV2(_ExtendBase):
             "tables": {"enabled": True, "targetFormat": "markdown"},
             "text": {"enabled": True, "styleFormattingEnabled": False},
             "formulas": {"enabled": True},
-        },
-        "advancedOptions": {"pageRotationEnabled": True},
-    }
-
-
-@register_layout_processor("extend_v1_0_1", version="1.0.1")
-class ExtendV1(_ExtendBase):
-    engine = "parse_performance"
-    engine_version = "1.0.1"
-    config_extra = {
-        "chunkingStrategy": {"type": "page"},
-        "blockOptions": {
-            "figures": {"enabled": True, "figureImageClippingEnabled": True},
-            "tables": {"enabled": True, "targetFormat": "html"},
-            "text": {"enabled": True, "styleFormattingEnabled": False},
-        },
-        "advancedOptions": {"pageRotationEnabled": True},
-    }
-
-
-@register_layout_processor("extend_light_v1_0_0", version="1.0.0")
-class ExtendLightV1(_ExtendBase):
-    engine = "parse_light"
-    engine_version = "1.0.0"
-    config_extra = {
-        "chunkingStrategy": {"type": "page"},
-        "blockOptions": {
-            "figures": {"enabled": True, "figureImageClippingEnabled": True},
-            "tables": {"enabled": True, "targetFormat": "html"},
-            "text": {"enabled": True, "styleFormattingEnabled": False},
-            "formulas": {"enabled": True},
-        },
-        "advancedOptions": {"pageRotationEnabled": True},
-    }
-
-
-@register_layout_processor("extend_light_v0_0_2_beta", version="0.0.2-beta")
-class ExtendLightV002(_ExtendBase):
-    engine = "parse_light"
-    engine_version = "0.0.2-beta"
-    config_extra = {
-        "chunkingStrategy": {"type": "page"},
-        "blockOptions": {
-            "figures": {"enabled": True, "figureImageClippingEnabled": True},
-            "tables": {"enabled": True, "targetFormat": "html"},
-            "text": {"enabled": True, "styleFormattingEnabled": False},
         },
         "advancedOptions": {"pageRotationEnabled": True},
     }

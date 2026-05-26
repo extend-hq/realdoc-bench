@@ -83,6 +83,43 @@ class BBox(BaseModel):
         union_area = self.area() + other.area() - inter
         return float(inter / union_area) if union_area > 0 else 0.0
 
+    def contains(self, other: BBox, *, inclusive: bool = True) -> bool:
+        """True if ``other`` lies wholly within this box."""
+        if inclusive:
+            return (
+                self.x <= other.x
+                and self.y <= other.y
+                and self.right() >= other.right()
+                and self.bottom() >= other.bottom()
+            )
+        return (
+            self.x < other.x
+            and self.y < other.y
+            and self.right() > other.right()
+            and self.bottom() > other.bottom()
+        )
+
+    def overlap_ratio(self, other: BBox, denom: str = "union") -> float:
+        """Intersection area as a fraction of the chosen denominator.
+
+        ``denom`` selects the divisor: ``union`` (IoU), ``self``/``other`` (the
+        respective box area), or ``min``/``max`` of the two areas.
+        """
+        inter = self.inter_area(other)
+        if inter == 0:
+            return 0.0
+        if denom == "union":
+            return inter / (self.area() + other.area() - inter)
+        if denom == "self":
+            return inter / self.area()
+        if denom == "other":
+            return inter / other.area()
+        if denom == "min":
+            return inter / min(self.area(), other.area())
+        if denom == "max":
+            return inter / max(self.area(), other.area())
+        raise ValueError("denom must be one of: union, self, other, min, max")
+
     @staticmethod
     def from_poly(poly: list[int | float]) -> BBox:
         pts = np.asarray(poly, dtype=np.float64).reshape(-1, 2)
