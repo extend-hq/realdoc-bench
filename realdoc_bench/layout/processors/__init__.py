@@ -21,6 +21,11 @@ except ImportError:
     pass
 
 try:
+    from realdoc_bench.layout.processors import paddle_structure  # noqa: F401
+except ImportError:
+    pass
+
+try:
     from realdoc_bench.layout.processors import aws_textract  # noqa: F401
 except ImportError:
     pass
