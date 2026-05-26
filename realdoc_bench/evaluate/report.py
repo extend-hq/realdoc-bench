@@ -18,6 +18,7 @@ import yaml
 
 from realdoc_bench.evaluate.runs import RunLayout
 
+
 # ── Parser display metadata ────────────────────────────────────────────────
 _PARSER_LABELS = {
     "extend_performance_v2_0_0_advanced": "Extend v2 - Performance",
@@ -183,7 +184,7 @@ def build_report(layout: RunLayout, *, bank_path: Path | None = None,
     for f in layout.cache_dir.glob("*__*.json"):
         try:
             r = json.loads(f.read_text())
-        except Exception:
+        except Exception:  # noqa: BLE001 — skip partial writes
             continue
         if "error" in r or "answer" not in r:
             continue
