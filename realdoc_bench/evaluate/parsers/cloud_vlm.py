@@ -1,22 +1,18 @@
 """Cloud VLMs as extraction parse providers (PDF → markdown).
 
-Gemini 3, Claude Sonnet 4.7, and Claude Opus 4.6 each render a PDF page-by-page
-and convert each page to Markdown, concatenating the result for the downstream
-extraction agent. These are the "frontier VLM as a parse pipeline" entries.
+Gemini 3.5 Flash renders a PDF page-by-page and converts each page to Markdown,
+concatenating the result for the downstream extraction agent — the "frontier VLM
+as a parse pipeline" entry.
 
 Costs are token-billed via the catalog (see ``shared/pricing/catalog.yaml``).
 
 Env:
 - ``GEMINI_API_KEY`` / ``GOOGLE_API_KEY`` — Gemini.
-- ``ANTHROPIC_API_KEY`` — Claude (Sonnet + Opus).
 """
 
 from __future__ import annotations
 
-from realdoc_bench.evaluate.parsers._vision_base import (
-    AnthropicVisionParserBase,
-    GeminiVisionParserBase,
-)
+from realdoc_bench.evaluate.parsers._vision_base import GeminiVisionParserBase
 from realdoc_bench.evaluate.parsers.base import register_parser
 
 _MARKDOWN_PROMPT = (
@@ -41,31 +37,8 @@ _MARKDOWN_PROMPT = (
 )
 
 
-@register_parser("gemini_3_flash", version="gemini-3-flash-preview")
-class Gemini3FlashParser(GeminiVisionParserBase):
-    model = "gemini-3-flash-preview"
-    pricing_key = "gemini_3_flash"
-    prompt = _MARKDOWN_PROMPT
-
-
 @register_parser("gemini_3_5_flash", version="gemini-3.5-flash")
 class Gemini35FlashParser(GeminiVisionParserBase):
     model = "gemini-3.5-flash"
     pricing_key = "gemini_3_5_flash"
     prompt = _MARKDOWN_PROMPT
-
-
-@register_parser("claude_sonnet_4_6", version="claude-sonnet-4-6")
-class SonnetParser(AnthropicVisionParserBase):
-    model = "claude-sonnet-4-6"
-    pricing_key = "claude_sonnet_4_6"
-    prompt = _MARKDOWN_PROMPT
-    max_tokens = 16384
-
-
-@register_parser("claude_opus_4_7", version="claude-opus-4-7")
-class OpusParser(AnthropicVisionParserBase):
-    model = "claude-opus-4-7"
-    pricing_key = "claude_opus_4_7"
-    prompt = _MARKDOWN_PROMPT
-    max_tokens = 16384

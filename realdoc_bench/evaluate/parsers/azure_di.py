@@ -33,7 +33,6 @@ from realdoc_bench.evaluate.parsers.base import (
 from realdoc_bench.shared.io.cache import sha256_text
 from realdoc_bench.shared.pricing.meter import parse_cost
 
-
 # Roles whose content we drop from the markdown (noise for downstream agents).
 _SKIP_ROLES = {"pageHeader", "pageFooter", "pageNumber"}
 

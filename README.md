@@ -15,7 +15,7 @@ Each mode reports cost and latency alongside quality.
 
 | Parser | Per-field Accuracy | Per-question Accuracy |
 | --- | ---: | ---: |
-| **Extend Parse 2.0 - Performance** | **95.7%** | **90.3%** |
+| **Extend Parse 2.0** | **95.7%** | **90.3%** |
 | LlamaParse (Agentic) | 92.1% | 84.3% |
 | Reducto (Agentic) | 91.1% | 83.1% |
 | Extend v1 | 90.4% | 81.8% |

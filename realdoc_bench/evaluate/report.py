@@ -18,21 +18,17 @@ import yaml
 
 from realdoc_bench.evaluate.runs import RunLayout
 
-
 # ── Parser display metadata ────────────────────────────────────────────────
 _PARSER_LABELS = {
     "extend_performance_v2_0_0_advanced": "Extend v2 - Performance",
     "extend_performance_v1_0_0": "Extend v1",
-    "extend_light_v1_0_0": "Extend Light v1",
     "llamaparse": "LlamaParse (Agentic)",
     "llamaparse_cost_effective": "LlamaParse",
     "reducto": "Reducto",
     "reducto_agentic": "Reducto (Agentic)",
     "azure_di": "Azure DI",
     "aws_textract": "AWS Textract",
-    "pymupdf": "PyMuPDF",
     "gemini_3_5_flash": "Gemini 3.5 Flash",
-    "gemini_3_flash": "Gemini 3 Flash",
 }
 
 # Parser color palette — same family for related models (Extend = blues,
@@ -41,7 +37,6 @@ _PARSER_LABELS = {
 _PARSER_COLORS = {
     "extend_performance_v2_0_0_advanced": "#2563eb",
     "extend_performance_v1_0_0":          "#60a5fa",
-    "extend_light_v1_0_0":                "#93c5fd",
     "llamaparse":                         "#059669",
     "llamaparse_cost_effective":          "#6ee7b7",
     "reducto_agentic":                    "#ea580c",
@@ -49,16 +44,14 @@ _PARSER_COLORS = {
     "azure_di":                           "#7c3aed",
     "aws_textract":                       "#f59e0b",
     "gemini_3_5_flash":                   "#db2777",
-    "gemini_3_flash":                     "#f9a8d4",
-    "pymupdf":                            "#6b7280",
 }
 
 # Canonical sort order (top to bottom of UI tables / bar charts when ties)
 _CANONICAL_ORDER = [
     "extend_performance_v2_0_0_advanced", "extend_performance_v1_0_0",
-    "extend_light_v1_0_0", "llamaparse", "llamaparse_cost_effective",
+    "llamaparse", "llamaparse_cost_effective",
     "reducto_agentic", "reducto", "azure_di", "aws_textract",
-    "gemini_3_5_flash", "gemini_3_flash", "pymupdf",
+    "gemini_3_5_flash",
 ]
 
 
@@ -190,7 +183,7 @@ def build_report(layout: RunLayout, *, bank_path: Path | None = None,
     for f in layout.cache_dir.glob("*__*.json"):
         try:
             r = json.loads(f.read_text())
-        except Exception:  # noqa: BLE001 — skip partial writes
+        except Exception:
             continue
         if "error" in r or "answer" not in r:
             continue

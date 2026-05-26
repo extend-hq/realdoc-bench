@@ -33,7 +33,6 @@ from realdoc_bench.evaluate.parsers.base import (
 from realdoc_bench.shared.io.cache import sha256_text
 from realdoc_bench.shared.pricing.meter import parse_cost
 
-
 # Block type → markdown prefix. The block's ``content`` field already carries
 # the text; we just decorate headings so the agent sees structure. (Reducto
 # tables come back as HTML or markdown depending on Reducto config; we leave

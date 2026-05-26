@@ -37,7 +37,6 @@ from realdoc_bench.evaluate.parsers.base import (
 from realdoc_bench.shared.io.cache import sha256_text
 from realdoc_bench.shared.pricing.meter import parse_cost
 
-
 _HEADING_TYPES = {"LAYOUT_TITLE": "# ", "LAYOUT_SECTION_HEADER": "## "}
 _SKIP_LAYOUT_TYPES = {"LAYOUT_PAGE_NUMBER", "LAYOUT_HEADER", "LAYOUT_FOOTER"}
 
