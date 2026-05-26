@@ -26,7 +26,7 @@ DEFAULT_DPI = 150
 MAX_RETRIES = 6
 RETRY_BACKOFF_SEC = 5.0
 
-# Claude (and occasionally Gemini) wraps single-page markdown output in
+# Gemini sometimes wraps single-page markdown output in
 # ```markdown ... ``` code fences despite the prompt saying "Output only the
 # Markdown for this page". The fences themselves leak into the agent's input,
 # confusing table/structure parsing. Strip them defensively.
@@ -112,10 +112,9 @@ class VisionParserBase(ParseProvider):
     max_tokens: int = 12000
     dpi: int = DEFAULT_DPI
     pricing_key: str = ""
-    # Pages are independent — fan them out concurrently. Cloud APIs (Claude /
-    # Gemini) and a batching vLLM endpoint both handle this fine; it turns an
-    # N-page sequential parse into ~N/page_concurrency wall-clock. Override per
-    # subclass or via the ``RDB_PAGE_CONCURRENCY`` env var.
+    # Pages are independent — fan them out concurrently. The Gemini API handles
+    # this fine; it turns an N-page sequential parse into ~N/page_concurrency
+    # wall-clock. Override per subclass or via the ``RDB_PAGE_CONCURRENCY`` env var.
     page_concurrency: int = 8
 
     @abstractmethod

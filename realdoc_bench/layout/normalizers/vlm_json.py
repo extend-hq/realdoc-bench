@@ -1,6 +1,6 @@
 """VLM JSON response → LayoutDocument.
 
-Used by the Claude / Gemini / GPT layout processors. The processors prompt the
+Used by VLM layout processors that emit JSON (e.g. ``dots_ocr``). They prompt the
 model to emit a JSON object whose shape mirrors Extend's ``ParserRun``
 (chunks → blocks with ``type``, ``content``, ``bounding_box``, and
 ``metadata.page``). This normalizer walks that dict and produces a
