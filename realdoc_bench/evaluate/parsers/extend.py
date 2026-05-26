@@ -145,9 +145,9 @@ class ExtendPerformanceV1(_ExtendParserBase):
     }
 
 
-# Full advanced config: every v2.0.0+ block option ON except agentic (deferred).
+# Full v2.0.0 config: every v2.0.0+ block option ON except agentic (deferred).
 # See: https://docs.extend.ai/product/parsing/configuration-options
-_PERFORMANCE_V2_ADVANCED_CONFIG_EXTRA = {
+_PERFORMANCE_V2_CONFIG_EXTRA = {
     "chunkingStrategy": {"type": "page"},
     "blockOptions": {
         "figures": {
@@ -174,14 +174,12 @@ _PERFORMANCE_V2_ADVANCED_CONFIG_EXTRA = {
 }
 
 
-@register_parser("extend_performance_v2_0_0_advanced", version="2.0.0+advanced")
-class ExtendPerformanceV2Advanced(_ExtendParserBase):
+@register_parser("extend_performance_v2_0_0", version="2.0.0")
+class ExtendPerformanceV2(_ExtendParserBase):
     """Performance v2.0.0 GA with EVERY v2.0.0+ block option ON (no agentic).
 
-    Used by the realdoc-bench v1.2_final pilot to showcase the within-vendor
-    delta from v1.0.0 → v2.0.0+advanced. Six new capabilities relative to v1:
+    Capabilities (vs v1):
       • advancedChartExtractionEnabled — bar/line/pie → structured table
-      • cellBlocksEnabled — per-cell row/col indices for table extraction
       • tableHeaderContinuationEnabled — multi-page table headers
       • signatureDetectionEnabled — handwritten signatures
       • blankFieldFormattingEnabled — explicit <blank /> on empty form fields
@@ -191,5 +189,4 @@ class ExtendPerformanceV2Advanced(_ExtendParserBase):
 
     engine = "parse_performance"
     engine_version = "2.0.0"
-    config_extra = _PERFORMANCE_V2_ADVANCED_CONFIG_EXTRA
-
+    config_extra = _PERFORMANCE_V2_CONFIG_EXTRA

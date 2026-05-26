@@ -34,3 +34,8 @@ try:
     from realdoc_bench.layout.processors import azure_di  # noqa: F401
 except ImportError:
     pass
+
+try:
+    from realdoc_bench.layout.processors import reducto  # noqa: F401
+except ImportError:
+    pass

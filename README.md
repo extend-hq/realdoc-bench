@@ -44,7 +44,7 @@ uv sync
 All secrets load from `.env` (or `.env.local` for machine-specific overrides; gitignored, wins on conflict) at the repo root — auto-loaded by the CLI. See [`.env.example`](.env.example) for the full list of supported variables. Keys needed per command:
 
 - `score` — `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
-- `parse` — whatever the parsers require: `ANTHROPIC_API_KEY`, `EXTEND_API_KEY`, `LLAMA_CLOUD_API_KEY`, AWS / Azure creds, …
+- `parse` — whatever the parsers require: `EXTEND_API_KEY`, `LLAMA_CLOUD_API_KEY`, AWS / Azure creds, …
 - `download` and the layout dataset fetch — `HF_TOKEN` (for the private datasets)
 
 **Dataset overrides** — point `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` at a local snapshot to skip the HF download.
@@ -53,7 +53,7 @@ All secrets load from `.env` (or `.env.local` for machine-specific overrides; gi
 
 The full pipeline is download → parse → score → report. Every stage is per-parser scoped, cached, and reusable.
 
-**QA Evaluator** — the extraction step uses **Gemini 3 Flash** (`gemini-3-flash-preview`) for every parser. It reads only the parser's markdown, emits typed JSON, and that JSON is scored deterministically with `deep_equal` against the gold — the model never sees the gold and never assigns a score itself. The same model and prompt are applied to every parser, so no parser is judged differently (including the `gemini_*` parsers, which are scored by the same judge as everyone else).
+**QA Evaluator** — the extraction step uses **Gemini 3 Flash** (`gemini-3-flash-preview`) for every parser. It reads only the parser's markdown, emits typed JSON, and that JSON is scored deterministically with `deep_equal` against the gold — the model never sees the gold and never assigns a score itself. The same model and prompt are applied to every parser, so no parser is judged differently (including the `gemini_3_5_flash` parser, which is scored by the same judge as everyone else).
 
 ```bash
 # 1. Pull the bench dataset (qa_bank.json + docs/) from the HF Hub

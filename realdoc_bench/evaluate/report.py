@@ -21,7 +21,7 @@ from realdoc_bench.evaluate.runs import RunLayout
 
 # ── Parser display metadata ────────────────────────────────────────────────
 _PARSER_LABELS = {
-    "extend_performance_v2_0_0_advanced": "Extend v2 - Performance",
+    "extend_performance_v2_0_0": "Extend v2 - Performance",
     "extend_performance_v1_0_0": "Extend v1",
     "llamaparse": "LlamaParse (Agentic)",
     "llamaparse_cost_effective": "LlamaParse",
@@ -36,7 +36,7 @@ _PARSER_LABELS = {
 # LlamaParse = emerald, Reducto = orange, Gemini = pink, etc.). Designed for
 # readability across stacked bars and per-parser heatmap rows.
 _PARSER_COLORS = {
-    "extend_performance_v2_0_0_advanced": "#2563eb",
+    "extend_performance_v2_0_0": "#2563eb",
     "extend_performance_v1_0_0":          "#60a5fa",
     "llamaparse":                         "#059669",
     "llamaparse_cost_effective":          "#6ee7b7",
@@ -49,7 +49,7 @@ _PARSER_COLORS = {
 
 # Canonical sort order (top to bottom of UI tables / bar charts when ties)
 _CANONICAL_ORDER = [
-    "extend_performance_v2_0_0_advanced", "extend_performance_v1_0_0",
+    "extend_performance_v2_0_0", "extend_performance_v1_0_0",
     "llamaparse", "llamaparse_cost_effective",
     "reducto_agentic", "reducto", "azure_di", "aws_textract",
     "gemini_3_5_flash",
