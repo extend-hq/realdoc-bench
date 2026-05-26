@@ -23,11 +23,6 @@ from realdoc_bench.shared.pricing.meter import parse_cost
 _PROD_URL = "https://api.extend.ai"
 
 
-def _base_url() -> str:
-    """Always hit prod unless EXTEND_BASE_URL is set explicitly."""
-    return os.environ.get("EXTEND_BASE_URL") or _PROD_URL
-
-
 class _ExtendParserBase(ParseProvider):
     engine: str = "parse_performance"
     engine_version: str = ""
@@ -44,7 +39,7 @@ class _ExtendParserBase(ParseProvider):
             token = os.environ.get("EXTEND_API_KEY")
             if not token:
                 raise RuntimeError("EXTEND_API_KEY not set")
-            self._client = Extend(token=token, base_url=_base_url())
+            self._client = Extend(token=token, base_url=_PROD_URL)
         return self._client
 
     def config_hash(self) -> str:

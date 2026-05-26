@@ -3,9 +3,8 @@
 Hits a vLLM OpenAI-compatible endpoint
 (e.g. ``vllm serve rednote-hilab/dots.mocr``, default port 8000).
 
-Configure via env:
+The model is pinned to ``rednote-hilab/dots.mocr``. Configure via env:
 - ``DOTS_OCR_BASE_URL`` — vLLM base URL, default ``http://localhost:8000/v1``
-- ``DOTS_OCR_MODEL`` — HF repo id, default ``rednote-hilab/dots.mocr``
 - ``DOTS_OCR_API_KEY`` — optional bearer (default ``EMPTY``)
 
 The model emits a JSON array of ``{category, bbox=[l,t,r,b], text}``;
@@ -212,7 +211,6 @@ class DotsOcrLayout(LayoutProcessor):
 
         base_url = os.environ.get("DOTS_OCR_BASE_URL", "http://localhost:8000/v1")
         api_key = os.environ.get("DOTS_OCR_API_KEY") or "EMPTY"
-        self._model_id = os.environ.get("DOTS_OCR_MODEL") or self.model
         # Per-request timeout generous enough for a 12k-token layout dump.
         return OpenAI(api_key=api_key, base_url=base_url, timeout=300.0, max_retries=0)
 
@@ -239,7 +237,7 @@ class DotsOcrLayout(LayoutProcessor):
             try:
                 client = self._ensure_client()
                 response = client.chat.completions.create(
-                    model=self._model_id,
+                    model=self.model,
                     max_completion_tokens=self.max_tokens,
                     messages=[
                         {
