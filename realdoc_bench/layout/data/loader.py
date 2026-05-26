@@ -2,9 +2,8 @@
 
 Resolves the manifest CSV plus image + COCO blobs from the HF dataset
 (``Extend-AI/RealDocBench-Layout``) and yields validated samples joining
-the two. HF is private by default; ``HF_TOKEN`` (or
-``huggingface-cli login``) is required. Pass ``manifest_path`` to override
-the snapshot-shipped manifest (useful for tests or local snapshots).
+the two. The dataset is public — no authentication needed. Pass ``manifest_path``
+to override the snapshot-shipped manifest (useful for tests or local snapshots).
 """
 
 from __future__ import annotations

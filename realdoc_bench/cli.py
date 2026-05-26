@@ -233,8 +233,6 @@ def evaluate_download(
     dataset: str = typer.Option(..., "--dataset",
                                 help="HF dataset repo id (e.g. extend-ai/realdoc-bench-qa)"),
     revision: str | None = typer.Option(None, "--revision"),
-    hf_token: str | None = typer.Option(None, "--hf-token",
-                                         help="overrides HF_TOKEN env"),
     force: bool = typer.Option(False, "--force",
                                 help="re-download even if files already present"),
     limit: int | None = typer.Option(
@@ -246,7 +244,7 @@ def evaluate_download(
     _env()
     layout = RunLayout.at(run_dir)
     res = download_dataset(layout, repo_id=dataset, revision=revision,
-                           hf_token=hf_token, force=force, limit=limit)
+                           force=force, limit=limit)
     console.print(
         f"downloaded → {layout.root}: {res['docs']} docs, "
         f"bank={'yes' if res['bank'] else 'NO'}"

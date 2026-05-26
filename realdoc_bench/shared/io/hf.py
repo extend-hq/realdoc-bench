@@ -1,7 +1,6 @@
 """HuggingFace Hub loader for realdoc-bench datasets.
 
-Datasets sit under the ``Extend-AI`` org. Private by default during development —
-exporting ``HF_TOKEN`` (or running ``huggingface-cli login``) is required to fetch them.
+Datasets sit under the ``Extend-AI`` org and are public — no authentication needed.
 """
 
 from __future__ import annotations
@@ -17,7 +16,6 @@ def fetch_dataset(
     *,
     revision: str | None = None,
     cache_dir: Path | None = None,
-    token: str | None = None,
 ) -> Path:
     """Download a HF dataset snapshot and return the local path.
 
@@ -25,7 +23,6 @@ def fetch_dataset(
         name: ``"<org>/<dataset>"``, e.g. ``"Extend-AI/RealDocBench-Layout"``.
         revision: optional git revision (commit SHA, branch, tag). Pin for reproducibility.
         cache_dir: local cache root. Defaults to ``~/.cache/realdoc-bench/hf``.
-        token: HF auth token. Falls back to ``HF_TOKEN`` env, then ``huggingface-cli login``.
 
     Local override: set ``REALDOC_BENCH_DATASET_<NAME>`` (with ``-`` and ``/`` replaced
     by ``_``, upper-cased) to point at a pre-staged local snapshot dir. Useful for
@@ -42,13 +39,11 @@ def fetch_dataset(
     from huggingface_hub import snapshot_download
 
     root = ensure_dir(cache_dir or (default_cache_root() / "hf"))
-    auth = token or os.environ.get("HF_TOKEN")
     return Path(
         snapshot_download(
             repo_id=name,
             repo_type="dataset",
             revision=revision,
             cache_dir=str(root),
-            token=auth,
         )
     )

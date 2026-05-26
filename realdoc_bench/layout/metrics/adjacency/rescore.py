@@ -12,8 +12,8 @@ Exposed as the ``realdoc-bench layout rescore`` CLI command::
 
 If ``--processor`` is omitted every processor subdirectory under the run is
 scored. Ground truth is loaded through the standard dataset loader, so the
-same ``HF_TOKEN`` / dataset-env requirements as ``realdoc-bench layout eval``
-apply (the CLI auto-loads ``.env`` / ``.env.local``).
+same dataset-env requirements as ``realdoc-bench layout eval`` apply (the CLI
+auto-loads ``.env`` / ``.env.local``).
 """
 
 from __future__ import annotations

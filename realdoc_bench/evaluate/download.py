@@ -19,7 +19,6 @@ limited.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 from pathlib import Path
 
@@ -29,7 +28,6 @@ from realdoc_bench.evaluate.runs import RunLayout
 def download_dataset(layout: RunLayout, *,
                      repo_id: str,
                      revision: str | None = None,
-                     hf_token: str | None = None,
                      force: bool = False,
                      limit: int | None = None) -> dict[str, int]:
     """Fetch `qa_bank.json` + `docs/` from a HF dataset repo into `<run-dir>/`.
@@ -44,8 +42,6 @@ def download_dataset(layout: RunLayout, *,
             "`uv sync` should install it (declared in pyproject.toml)"
         ) from e
 
-    token = hf_token or os.environ.get("HF_TOKEN") or os.environ.get(
-        "HUGGING_FACE_HUB_TOKEN")
     if force and layout.bank_path.exists():
         layout.bank_path.unlink()
     if force and layout.docs_dir.exists():
@@ -59,7 +55,7 @@ def download_dataset(layout: RunLayout, *,
         from realdoc_bench.evaluate.score import docs_for_items
         hf_hub_download(
             repo_id=repo_id, repo_type="dataset", filename="qa_bank.json",
-            revision=revision, token=token,
+            revision=revision,
             local_dir=str(layout.root), local_dir_use_symlinks=False,
         )
         bank = json.loads(layout.bank_path.read_text())
@@ -70,7 +66,7 @@ def download_dataset(layout: RunLayout, *,
 
     snap = Path(snapshot_download(
         repo_id=repo_id, repo_type="dataset",
-        revision=revision, token=token,
+        revision=revision,
         allow_patterns=patterns,
         local_dir=str(layout.root),
         local_dir_use_symlinks=False,
