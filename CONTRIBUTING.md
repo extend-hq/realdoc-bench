@@ -74,7 +74,7 @@ except ImportError:
     pass
 ```
 
-**3. Normalize block types into the 9-class public vocab** (`text`, `heading`, `section_heading`, `header`, `footer`, `page_number`, `figure`, `table`, `key_value`). Anything outside that set will fail Pydantic validation. See `reducto.py` for a typical vendor-string → public-class mapping table.
+**3. Normalize block types into the 9-class public vocab** (`text`, `heading`, `section_heading`, `header`, `footer`, `page_number`, `figure`, `table`, `key_value`). Anything outside that set will fail Pydantic validation. The typical pattern is a `dict[str, LayoutBlockType]` mapping the vendor's labels to public classes, with a fallback to `"text"`.
 
 **4. BBox is in pixels** in the source image's coordinate space — convert from normalized 0–1 with `int(round(value * width))` before constructing `BBox`.
 
