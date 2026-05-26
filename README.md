@@ -4,6 +4,9 @@
 
 # RealDocBench
 
+[![Realdoc-Bench on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-Realdoc--Bench-yellow)](https://huggingface.co/datasets/Extend-AI/Realdoc-Bench)
+[![RealDocBench-Layout on Hugging Face](https://img.shields.io/badge/%F0%9F%A4%97%20Dataset-RealDocBench--Layout-yellow)](https://huggingface.co/datasets/Extend-AI/RealDocBench-Layout)
+
 A document parsing benchmark that measures two things on real documents:
 
 1. **Layout quality** — bounding-box and block-type predictions versus human annotation, with F1, adjusted F1, mAP, and per-block-type breakdowns.
