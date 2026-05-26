@@ -2,12 +2,9 @@
 
 These models are per-image: a PDF is rendered page-by-page, each page image is
 sent to the model with a markdown-extraction prompt, and the per-page markdown
-is concatenated. Two SDK families are supported:
+is concatenated.
 
-- :class:`OpenAIVisionParserBase` — OpenAI-compatible vLLM endpoints
-  (dots.mocr, GLM-OCR self-hosted).
-- :class:`AnthropicVisionParserBase` / :class:`GeminiVisionParserBase` — the
-  Claude and Gemini cloud APIs.
+- :class:`GeminiVisionParserBase` — the Google Gemini cloud API.
 
 Cost is page-based when the catalog rate is a ``PageRate`` and token-based when
 it's a ``TokenRate`` (cloud VLMs). Connection errors are retried with backoff.
@@ -15,7 +12,6 @@ it's a ``TokenRate`` (cloud VLMs). Connection errors are retried with backoff.
 
 from __future__ import annotations
 
-import base64
 import os
 import re
 import time
@@ -27,7 +23,6 @@ from realdoc_bench.evaluate.parsers.base import ParseProvider, ParseResult
 from realdoc_bench.shared.pricing.meter import agent_cost, parse_cost
 
 DEFAULT_DPI = 150
-DEFAULT_TIMEOUT_SEC = 300.0
 MAX_RETRIES = 6
 RETRY_BACKOFF_SEC = 5.0
 
@@ -173,127 +168,6 @@ class VisionParserBase(ParseProvider):
             config_hash=self.config_hash(),
             raw={"input_tokens": in_tok, "output_tokens": out_tok} if (in_tok or out_tok) else None,
         )
-
-
-# ── OpenAI-compatible (vLLM) ────────────────────────────────────────────────
-
-
-class OpenAIVisionParserBase(VisionParserBase):
-    """For OpenAI-compatible vLLM endpoints (dots.mocr, GLM-OCR self-hosted)."""
-
-    base_url_env: str = ""
-    model_env: str = ""
-    default_base_url: str = "http://localhost:8000/v1"
-    default_model: str = ""
-
-    def __init__(self) -> None:
-        self._client: Any | None = None
-        self._model_id: str = ""
-
-    def _new_client(self) -> Any:
-        from openai import OpenAI
-
-        base_url = os.environ.get(self.base_url_env, self.default_base_url)
-        api_key = os.environ.get(f"{self.base_url_env}_KEY") or "EMPTY"
-        self._model_id = os.environ.get(self.model_env, "") or self.default_model
-        return OpenAI(api_key=api_key, base_url=base_url, timeout=DEFAULT_TIMEOUT_SEC, max_retries=0)
-
-    def _ensure_client(self) -> Any:
-        if self._client is None:
-            self._client = self._new_client()
-        return self._client
-
-    def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]:
-        encoded = base64.b64encode(png_bytes).decode("utf-8")
-        data_url = f"data:image/png;base64,{encoded}"
-        last_err: Exception | None = None
-        for attempt in range(MAX_RETRIES):
-            try:
-                client = self._ensure_client()
-                resp = client.chat.completions.create(
-                    model=self._model_id,
-                    max_completion_tokens=self.max_tokens,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {"type": "text", "text": self.prompt},
-                                {"type": "image_url", "image_url": {"url": data_url}},
-                            ],
-                        }
-                    ],
-                )
-                text = resp.choices[0].message.content or "" if resp.choices else ""
-                usage = getattr(resp, "usage", None)
-                it = getattr(usage, "prompt_tokens", 0) or 0 if usage else 0
-                ot = getattr(usage, "completion_tokens", 0) or 0 if usage else 0
-                return text, int(it), int(ot)
-            except Exception as e:  # noqa: BLE001
-                last_err = e
-                self._client = None
-                if attempt + 1 < MAX_RETRIES:
-                    time.sleep(RETRY_BACKOFF_SEC * (attempt + 1))
-        raise RuntimeError(f"{self.name} page request failed after {MAX_RETRIES} attempts: {last_err}")
-
-
-# ── Anthropic Claude ────────────────────────────────────────────────────────
-
-
-class AnthropicVisionParserBase(VisionParserBase):
-    """For the Anthropic Claude API (Sonnet / Opus as a parse pipeline)."""
-
-    model: str = ""
-
-    def __init__(self) -> None:
-        self._client: Any | None = None
-
-    def _ensure_client(self) -> Any:
-        if self._client is None:
-            from anthropic import Anthropic
-
-            self._client = Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY"))
-        return self._client
-
-    def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]:
-        encoded = base64.b64encode(png_bytes).decode("utf-8")
-        last_err: Exception | None = None
-        for attempt in range(MAX_RETRIES):
-            try:
-                client = self._ensure_client()
-                resp = client.messages.create(
-                    model=self.model,
-                    max_tokens=self.max_tokens,
-                    messages=[
-                        {
-                            "role": "user",
-                            "content": [
-                                {
-                                    "type": "image",
-                                    "source": {
-                                        "type": "base64",
-                                        "media_type": "image/png",
-                                        "data": encoded,
-                                    },
-                                },
-                                {"type": "text", "text": self.prompt},
-                            ],
-                        }
-                    ],
-                )
-                text = "".join(
-                    b.text for b in resp.content if getattr(b, "type", None) == "text"
-                )
-                usage = getattr(resp, "usage", None)
-                it = getattr(usage, "input_tokens", 0) or 0 if usage else 0
-                ot = getattr(usage, "output_tokens", 0) or 0 if usage else 0
-                return text, int(it), int(ot)
-            except Exception as e:  # noqa: BLE001
-                last_err = e
-                msg = str(e).lower()
-                self._client = None
-                if attempt + 1 < MAX_RETRIES:
-                    time.sleep(RETRY_BACKOFF_SEC * (attempt + 1) if "rate" in msg or "overload" in msg else RETRY_BACKOFF_SEC)
-        raise RuntimeError(f"{self.name} page request failed after {MAX_RETRIES} attempts: {last_err}")
 
 
 # ── Google Gemini ───────────────────────────────────────────────────────────
