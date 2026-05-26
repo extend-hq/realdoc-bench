@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any
@@ -63,13 +62,3 @@ def register_layout_processor(name: str, *, version: str) -> Any:
 
 def build(name: str, **kwargs: Any) -> LayoutProcessor:
     return registry.get(name)(**kwargs)
-
-
-def _timed(fn: Any) -> Any:
-    def _wrapped(self: LayoutProcessor, image_path: Path, **kw: Any) -> ProcessorResult:
-        t0 = time.perf_counter()
-        result = fn(self, image_path, **kw)
-        result.latency_sec = time.perf_counter() - t0
-        return result
-
-    return _wrapped
