@@ -205,6 +205,43 @@ def test_azure_maps_page_adornment_roles():
     ]
 
 
+def test_azure_keeps_span_less_region_but_still_drops_cells():
+    """A table region missing `spans` is surfaced (appended), not dropped; its
+    cells (emit=False) stay out of the output regardless."""
+    data = {
+        "pages": [{"pageNumber": 1, "width": 1000, "height": 1000}],
+        "tables": [
+            {
+                # no "spans" → span offset None, but it's a real region.
+                "boundingRegions": [{"pageNumber": 1, "polygon": _rect_poly(100, 100, 300, 300)}],
+                "cells": [
+                    {"boundingRegions": [{"pageNumber": 1, "polygon": _rect_poly(100, 100, 200, 160)}]}
+                ],
+            }
+        ],
+    }
+    doc = normalize_azure_di(data)
+    # table region kept (1 block); cell excluded.
+    assert [b.block_type for b in doc.pages[0].blocks] == ["table"]
+
+
+def test_azure_malformed_polygon_skipped_not_crash():
+    """An odd-length polygon is skipped, not fed to BBox.from_poly (which would
+    raise on reshape and abort the whole page)."""
+    data = {
+        "pages": [{"pageNumber": 1, "width": 1000, "height": 1000}],
+        "paragraphs": [
+            {"role": None, "content": "bad", "spans": [{"offset": 0}],
+             "boundingRegions": [{"pageNumber": 1, "polygon": [10, 20, 30]}]},  # odd length
+            {"role": None, "content": "ok", "spans": [{"offset": 5}],
+             "boundingRegions": [{"pageNumber": 1, "polygon": _rect_poly(0, 0, 100, 40)}]},
+        ],
+    }
+    doc = normalize_azure_di(data)  # must not raise
+    # malformed region dropped; valid one kept.
+    assert [b.block_type for b in doc.pages[0].blocks] == ["text"]
+
+
 def test_azure_empty_result_yields_empty_page():
     doc = normalize_azure_di({"pages": [{"pageNumber": 1, "width": 100, "height": 200}]})
     assert len(doc.pages) == 1

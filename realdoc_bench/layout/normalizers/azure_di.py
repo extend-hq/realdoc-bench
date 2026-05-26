@@ -14,9 +14,10 @@ processor reproduces the published layout-leaderboard rows:
   cells / figures so cell text isn't double-counted).
 
 Two ocr-bench behaviors are reproduced deliberately: (1) reading order follows
-each item's first span offset; (2) table **cells** are added for the dedup pass
-but excluded from the final blocks — ocr-bench's ``blocks_without_spans`` filter
-tests the wrong variable and always drops them. The raw vendor strings emitted
+each item's first span offset; (2) table **cells** join the containment-dedup
+pass but are excluded from the final blocks (carried as ``emit=False`` rather
+than keyed on a missing span, so a region that happens to lack spans is still
+surfaced instead of silently dropped). The raw vendor strings emitted
 here are folded into the public 9 classes by ``LayoutBlock``'s validator (the
 same collapse that ingested ocr-bench's predictions when those rows were
 scored): ``table_cell``→table, ``table_caption`` / ``table_footer`` /
@@ -63,15 +64,20 @@ def _span_offset(spans: list[dict] | None) -> int | None:
 
 def _region_bbox(region: dict) -> BBox | None:
     poly = region.get("polygon")
-    return BBox.from_poly(poly) if poly else None
+    # Need an even count of >= 4 ints (>= 2 points) to form a box; anything
+    # malformed (e.g. a truncated odd-length payload) is skipped rather than
+    # letting BBox.from_poly's reshape(-1, 2) raise and abort the whole page.
+    if not poly or len(poly) < 4 or len(poly) % 2:
+        return None
+    return BBox.from_poly(poly)
 
 
 def _block(block_type: str, bbox: BBox, *, text: str | None = None) -> LayoutBlock:
     return LayoutBlock(block_type=cast(LayoutBlockType, block_type), bbox=bbox, text=text)
 
 
-def _contained(bb: BBox, existing: list[tuple[int | None, LayoutBlock]]) -> bool:
-    for _, blk in existing:
+def _contained(bb: BBox, existing: list[tuple[int | None, LayoutBlock, bool]]) -> bool:
+    for _, blk, _emit in existing:
         if blk.bbox is None:
             continue
         if blk.bbox.contains(bb, inclusive=True):
@@ -82,11 +88,13 @@ def _contained(bb: BBox, existing: list[tuple[int | None, LayoutBlock]]) -> bool
 
 
 def normalize_azure_di(data: dict[str, Any], *, source: str | None = None) -> LayoutDocument:
-    # page_number -> list[(span_offset | None, block)]
-    page_blocks: dict[int, list[tuple[int | None, LayoutBlock]]] = {}
+    # page_number -> list[(span_offset | None, block, emit)]. ``emit=False``
+    # blocks (table cells) join the containment-dedup pass but are excluded
+    # from the final output, reproducing ocr-bench.
+    page_blocks: dict[int, list[tuple[int | None, LayoutBlock, bool]]] = {}
 
-    def add(page_num: int, span_offset: int | None, block: LayoutBlock) -> None:
-        page_blocks.setdefault(page_num, []).append((span_offset, block))
+    def add(page_num: int, span_offset: int | None, block: LayoutBlock, *, emit: bool = True) -> None:
+        page_blocks.setdefault(page_num, []).append((span_offset, block, emit))
 
     for tbl in data.get("tables") or []:
         so = _span_offset(tbl.get("spans"))
@@ -107,12 +115,12 @@ def normalize_azure_di(data: dict[str, Any], *, source: str | None = None) -> La
                 bb = _region_bbox(br)
                 if bb is not None:
                     add(br.get("pageNumber", 1), fso, _block("table_footer", bb))
-        # Cells get no span offset — added for the dedup pass, dropped from output.
+        # Cells join the dedup pass but are excluded from output (emit=False).
         for cell in tbl.get("cells") or []:
             for br in cell.get("boundingRegions") or []:
                 bb = _region_bbox(br)
                 if bb is not None:
-                    add(br.get("pageNumber", 1), None, _block("table_cell", bb))
+                    add(br.get("pageNumber", 1), None, _block("table_cell", bb), emit=False)
 
     for fig in data.get("figures") or []:
         so = _span_offset(fig.get("spans"))
@@ -149,14 +157,17 @@ def normalize_azure_di(data: dict[str, Any], *, source: str | None = None) -> La
 
     pages: list[LayoutPage] = []
     for page_num, items in sorted(page_blocks.items()):
-        # Span-less blocks (table cells) are dedup-only and excluded here,
-        # reproducing ocr-bench's output. Remaining blocks order by span offset.
+        # Cells (emit=False) were dedup-only; everything else is output. Blocks
+        # with a span offset are ordered by it; a span-less region (rare — Azure
+        # normally spans every table/figure/paragraph) is appended afterward so
+        # it is surfaced rather than silently dropped.
+        emitted = [(so, blk) for so, blk, emit in items if emit]
         with_order = sorted(
-            ((so, blk) for so, blk in items if so is not None), key=lambda x: x[0]
+            ((so, blk) for so, blk in emitted if so is not None), key=lambda x: x[0]
         )
         for reading_order, (_, blk) in enumerate(with_order):
             blk.reading_order = reading_order
-        ordered = [blk for _, blk in with_order]
+        ordered = [blk for _, blk in with_order] + [blk for so, blk in emitted if so is None]
         width, height = dims.get(page_num, (None, None))
         pages.append(LayoutPage(page_number=page_num, width=width, height=height, blocks=ordered))
 
