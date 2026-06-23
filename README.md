@@ -18,16 +18,16 @@ Each mode reports cost and latency alongside quality.
 
 | Parser | Per-field Accuracy | Per-question Accuracy |
 | --- | ---: | ---: |
-| **Extend Parse 2.0** | **95.7%** | **90.3%** |
-| LlamaParse (Agentic) | 92.1% | 84.3% |
-| Reducto (Agentic) | 91.1% | 83.1% |
-| Extend v1 | 90.4% | 81.8% |
-| Gemini 3.5 Flash | 89.0% | 81.6% |
-| LlamaParse | 89.0% | 80.4% |
+| **Extend Parse 2.0** | **96.0%** | **90.9%** |
+| LlamaParse (Agentic) | 92.2% | 84.5% |
+| Reducto (Agentic) | 91.4% | 83.8% |
+| Extend v1 | 90.8% | 82.5% |
+| Gemini 3.5 Flash | 89.3% | 82.2% |
+| LlamaParse | 89.2% | 80.8% |
+| Azure DI | 89.1% | 79.6% |
 | Mistral OCR 4 | 88.8% | 81.3% |
-| Azure DI | 88.8% | 78.9% |
-| Reducto | 88.5% | 80.2% |
-| AWS Textract | 70.5% | 53.6% |
+| Reducto | 88.7% | 80.5% |
+| AWS Textract | 70.7% | 54.0% |
 
 ## Layout Leaderboard
 | **Model** | **N** | **Strict F1** | **Adjusted F1** | **Macro F1** | **Precision** | **Recall** |
