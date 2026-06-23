@@ -21,6 +21,8 @@ reducto_agentic:                    {unit: page,   usd: 0.060}
 # cost-effective = 3 credits/page → $0.00375.
 llamaparse:                         {unit: page,   usd: 0.0125}
 llamaparse_cost_effective:          {unit: page,   usd: 0.00375}
+# Mistral OCR 4 API: $4 / 1,000 pages.
+mistral_ocr_4:                      {unit: page,   usd: 0.004}
 
 # ── VLMs invoked as parse providers (token billing) ─────────────────────────
 # Gemini 3.5 Flash standard pay-as-you-go: $1.50 / 1M input, $9.00 / 1M output.
