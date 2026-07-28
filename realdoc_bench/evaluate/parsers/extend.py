@@ -23,6 +23,11 @@ from realdoc_bench.shared.pricing.meter import parse_cost
 _PROD_URL = "https://api.extend.ai"
 
 
+def _base_url() -> str:
+    """Always hit prod unless EXTEND_BASE_URL is set explicitly."""
+    return os.environ.get("EXTEND_BASE_URL") or _PROD_URL
+
+
 class _ExtendParserBase(ParseProvider):
     engine: str = "parse_performance"
     engine_version: str = ""
@@ -39,7 +44,7 @@ class _ExtendParserBase(ParseProvider):
             token = os.environ.get("EXTEND_API_KEY")
             if not token:
                 raise RuntimeError("EXTEND_API_KEY not set")
-            self._client = Extend(token=token, base_url=_PROD_URL)
+            self._client = Extend(token=token, base_url=_base_url())
         return self._client
 
     def config_hash(self) -> str:
@@ -167,6 +172,28 @@ _PERFORMANCE_V2_CONFIG_EXTRA = {
     },
     "advancedOptions": {"pageRotationEnabled": True},
 }
+
+
+@register_parser("extend_light_v1_0_0", version="1.0.0")
+class ExtendLightV1(_ExtendParserBase):
+    """Parse Light v1.0.0 with advanced chart extraction enabled."""
+
+    engine = "parse_light"
+    engine_version = "1.0.0"
+    config_extra = {
+        "chunkingStrategy": {"type": "page"},
+        "blockOptions": {
+            "figures": {
+                "enabled": True,
+                "figureImageClippingEnabled": True,
+                "advancedChartExtractionEnabled": True,
+            },
+            "tables": {"enabled": True, "targetFormat": "html"},
+            "text": {"enabled": True, "styleFormattingEnabled": False},
+            "formulas": {"enabled": True},
+        },
+        "advancedOptions": {"pageRotationEnabled": True},
+    }
 
 
 @register_parser("extend_performance_v2_0_0", version="2.0.0")

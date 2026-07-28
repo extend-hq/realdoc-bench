@@ -21,7 +21,7 @@ Each mode reports cost and latency alongside quality.
 | **Extend Parse 2.0** | **96.0%** | **90.9%** |
 | LlamaParse (Agentic) | 92.2% | 84.5% |
 | Reducto (Agentic) | 91.4% | 83.8% |
-| Extend v1 | 90.8% | 82.5% |
+| Extend Parse Light 1.0 | 90.5% | 82.7% |
 | Gemini 3.5 Flash | 89.3% | 82.2% |
 | LlamaParse | 89.2% | 80.8% |
 | Azure DI | 89.1% | 79.6% |
