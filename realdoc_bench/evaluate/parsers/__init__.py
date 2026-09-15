@@ -34,3 +34,8 @@ try:
     from realdoc_bench.evaluate.parsers import mistral_ocr  # noqa: F401
 except ImportError:
     pass
+
+try:
+    from realdoc_bench.evaluate.parsers import anyformat  # noqa: F401
+except ImportError:
+    pass
