@@ -19,6 +19,7 @@ Each mode reports cost and latency alongside quality.
 | Parser | Per-field Accuracy | Per-question Accuracy |
 | --- | ---: | ---: |
 | **Extend Parse 2.0** | **96.0%** | **90.9%** |
+| anyformat (Standard) | 92.8% | 86.7% |
 | LlamaParse (Agentic) | 92.2% | 84.5% |
 | Reducto (Agentic) | 91.4% | 83.8% |
 | Extend Parse Light 1.0 | 90.5% | 82.7% |
@@ -48,7 +49,7 @@ uv sync
 All secrets load from `.env` (or `.env.local` for machine-specific overrides; gitignored, wins on conflict) at the repo root — auto-loaded by the CLI. See [`.env.example`](.env.example) for the full list of supported variables. Keys needed per command:
 
 - `score` — `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
-- `parse` — whatever the parsers require: `EXTEND_API_KEY`, `LLAMA_CLOUD_API_KEY`, `MISTRAL_API_KEY`, AWS / Azure creds, …
+- `parse` — whatever the parsers require: `EXTEND_API_KEY`, `LLAMA_CLOUD_API_KEY`, `MISTRAL_API_KEY`, `ANYFORMAT_API_KEY`, AWS / Azure creds, …
 - `download` and the layout dataset fetch — no key needed (the datasets are public)
 
 **Dataset overrides** — point `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` at a local snapshot to skip the HF download.
