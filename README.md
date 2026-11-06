@@ -19,15 +19,22 @@ Each mode reports cost and latency alongside quality.
 | Parser | Per-field Accuracy | Per-question Accuracy |
 | --- | ---: | ---: |
 | **Extend Parse 2.0** | **96.0%** | **90.9%** |
+| Extend Parse Auto 1.0 † | 94.4% | 88.3% |
 | LlamaParse (Agentic) | 92.2% | 84.5% |
 | Reducto (Agentic) | 91.4% | 83.8% |
+| GPT-6.1 Terra † | 90.9% | 84.4% |
+| GPT-6 Astra † | 90.8% | 84.5% |
 | Extend Parse Light 1.0 | 90.5% | 82.7% |
+| GPT-6.1 Sol † | 90.4% | 83.9% |
 | Gemini 3.5 Flash | 89.3% | 82.2% |
 | LlamaParse | 89.2% | 80.8% |
 | Azure DI | 89.1% | 79.6% |
 | Mistral OCR 4 | 88.8% | 81.3% |
 | Reducto | 88.7% | 80.5% |
+| GPT-6 Luna † | 88.4% | 79.9% |
 | AWS Textract | 70.7% | 54.0% |
+
+† Added from a 2026-11-05 run; other rows are from earlier runs. Reruns move scores by about a point, so compare rows within the same run when the gap is small.
 
 ## Layout Leaderboard
 | **Model** | **N** | **Strict F1** | **Adjusted F1** | **Macro F1** | **Precision** | **Recall** |
@@ -48,7 +55,7 @@ uv sync
 All secrets load from `.env` (or `.env.local` for machine-specific overrides; gitignored, wins on conflict) at the repo root — auto-loaded by the CLI. See [`.env.example`](.env.example) for the full list of supported variables. Keys needed per command:
 
 - `score` — `GEMINI_API_KEY` (or `GOOGLE_API_KEY`)
-- `parse` — whatever the parsers require: `EXTEND_API_KEY`, `LLAMA_CLOUD_API_KEY`, `MISTRAL_API_KEY`, AWS / Azure creds, …
+- `parse` — whatever the parsers require: `EXTEND_API_KEY`, `OPENAI_API_KEY`, `LLAMA_CLOUD_API_KEY`, `MISTRAL_API_KEY`, AWS / Azure creds, …
 - `download` and the layout dataset fetch — no key needed (the datasets are public)
 
 **Dataset overrides** — point `REALDOC_BENCH_DATASET_EXTEND_AI_REALDOCBENCH_LAYOUT` at a local snapshot to skip the HF download.
@@ -67,6 +74,9 @@ realdoc-bench evaluate download --run-dir runs/qa --dataset Extend-AI/Realdoc-Be
 realdoc-bench evaluate parse --run-dir runs/qa -p reducto -p aws_textract -p azure_di
 # OCR 4 is available as:
 realdoc-bench evaluate parse --run-dir runs/qa -p mistral_ocr_4
+# Extend Parse Auto and OpenAI models (openai_gpt_6_astra, openai_gpt_6_1_sol,
+# openai_gpt_6_1_terra, openai_gpt_6_luna):
+realdoc-bench evaluate parse --run-dir runs/qa -p extend_auto_v1_0_0 -p openai_gpt_6_1_sol
 
 # 3. Score every (question × parser) pair with Gemini 3 Flash + deep_equal
 #    No -p means: score every parser found under <run-dir>/parses/

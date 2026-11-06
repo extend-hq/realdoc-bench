@@ -5,6 +5,7 @@ sent to the model with a markdown-extraction prompt, and the per-page markdown
 is concatenated.
 
 - :class:`GeminiVisionParserBase` — the Google Gemini cloud API.
+- :class:`OpenAIVisionParserBase` — the OpenAI Responses API.
 
 Cost is page-based when the catalog rate is a ``PageRate`` and token-based when
 it's a ``TokenRate`` (cloud VLMs). Connection errors are retried with backoff.
@@ -207,6 +208,61 @@ class GeminiVisionParserBase(VisionParserBase):
                 it = getattr(usage, "prompt_token_count", 0) or 0 if usage else 0
                 ot = getattr(usage, "candidates_token_count", 0) or 0 if usage else 0
                 return text, int(it), int(ot)
+            except Exception as e:  # noqa: BLE001
+                last_err = e
+                self._client = None
+                if attempt + 1 < MAX_RETRIES:
+                    time.sleep(RETRY_BACKOFF_SEC * (attempt + 1))
+        raise RuntimeError(f"{self.name} page request failed after {MAX_RETRIES} attempts: {last_err}")
+
+
+# ── OpenAI ──────────────────────────────────────────────────────────────────
+
+
+class OpenAIVisionParserBase(VisionParserBase):
+    """For the OpenAI Responses API (GPT models as a parse pipeline).
+
+    Pages go up at ``detail="high"``: the ``auto`` default may downsample a dense
+    page below what's legible. Reasoning effort is left at the model default.
+    """
+
+    model: str = ""
+    image_detail: str = "high"
+
+    def __init__(self) -> None:
+        self._client: Any | None = None
+
+    def _ensure_client(self) -> Any:
+        if self._client is None:
+            from openai import OpenAI
+
+            self._client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+        return self._client
+
+    def _call_page(self, png_bytes: bytes) -> tuple[str, int, int]:
+        import base64
+
+        data_url = "data:image/png;base64," + base64.b64encode(png_bytes).decode("ascii")
+        last_err: Exception | None = None
+        for attempt in range(MAX_RETRIES):
+            try:
+                client = self._ensure_client()
+                resp = client.responses.create(
+                    model=self.model,
+                    input=[
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "input_image", "image_url": data_url, "detail": self.image_detail},
+                                {"type": "input_text", "text": self.prompt},
+                            ],
+                        }
+                    ],
+                )
+                usage = getattr(resp, "usage", None)
+                it = getattr(usage, "input_tokens", 0) or 0 if usage else 0
+                ot = getattr(usage, "output_tokens", 0) or 0 if usage else 0
+                return resp.output_text or "", int(it), int(ot)
             except Exception as e:  # noqa: BLE001
                 last_err = e
                 self._client = None

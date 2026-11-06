@@ -28,7 +28,12 @@ class TokenRate:
     output_usd_per_1k: float
 
 
-Rate = PageRate | TokenRate
+@dataclass(frozen=True)
+class CreditRate:
+    usd_per_credit: float
+
+
+Rate = PageRate | TokenRate | CreditRate
 
 
 @lru_cache(maxsize=1)
@@ -45,6 +50,8 @@ def _load() -> tuple[dict[str, Rate], str]:
                 input_usd_per_1k=float(entry["input_usd_per_1k"]),
                 output_usd_per_1k=float(entry["output_usd_per_1k"]),
             )
+        elif unit == "credits":
+            rates[name] = CreditRate(usd_per_credit=float(entry["usd_per_credit"]))
         else:
             raise ValueError(f"unknown pricing unit {unit!r} for {name}")
     return rates, sha256_bytes(raw_bytes)[:12]
@@ -65,6 +72,15 @@ def parse_cost(provider: str, *, pages: int | None) -> float | None:
         return None
     if isinstance(rate, PageRate):
         return rate.usd * pages
+    return None
+
+
+def credit_cost(provider: str, *, credits: float | None) -> float | None:
+    rate = get_rate(provider)
+    if rate is None or credits is None:
+        return None
+    if isinstance(rate, CreditRate):
+        return rate.usd_per_credit * credits
     return None
 
 

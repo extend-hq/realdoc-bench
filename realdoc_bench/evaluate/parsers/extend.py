@@ -18,7 +18,7 @@ from realdoc_bench.evaluate.parsers.base import (
     register_parser,
 )
 from realdoc_bench.shared.io.cache import sha256_text
-from realdoc_bench.shared.pricing.meter import parse_cost
+from realdoc_bench.shared.pricing.meter import credit_cost, parse_cost
 
 _PROD_URL = "https://api.extend.ai"
 
@@ -79,11 +79,14 @@ class _ExtendParserBase(ParseProvider):
         latency = time.perf_counter() - t0
         markdown = _markdown_from_run(run)
         pages = _page_count(run)
+        cost = credit_cost(self.name, credits=_credits(run))
+        if cost is None:
+            cost = parse_cost(self.name, pages=pages)
         return ParseResult(
             markdown=markdown,
             page_count=pages,
             latency_sec=latency,
-            cost_estimate_usd=parse_cost(self.name, pages=pages),
+            cost_estimate_usd=cost,
             pages_processed=pages,
             provider=self.name,
             version=self.version,
@@ -110,6 +113,12 @@ def _markdown_from_run(run: Any) -> str:
         if isinstance(output, dict) and isinstance(output.get("markdown"), str):
             return output["markdown"]
     return ""
+
+
+def _credits(run: Any) -> float | None:
+    usage = getattr(run, "usage", None)
+    credits = getattr(usage, "credits", None) if usage is not None else None
+    return float(credits) if isinstance(credits, (int, float)) else None
 
 
 def _page_count(run: Any) -> int | None:
@@ -194,6 +203,20 @@ class ExtendLightV1(_ExtendParserBase):
         },
         "advancedOptions": {"pageRotationEnabled": True},
     }
+
+
+@register_parser("extend_auto_v1_0_0", version="1.0.0")
+class ExtendAutoV1(_ExtendParserBase):
+    """Parse Auto v1.0.0: per-page routing between the Light and Performance pipelines.
+
+    Uses the full Performance v2 config so pages routed to Performance get the same
+    treatment as ``extend_performance_v2_0_0``. Billed per page by complexity, so
+    cost comes from the credits the run reports.
+    """
+
+    engine = "parse_auto"
+    engine_version = "1.0.0"
+    config_extra = _PERFORMANCE_V2_CONFIG_EXTRA
 
 
 @register_parser("extend_performance_v2_0_0", version="2.0.0")
