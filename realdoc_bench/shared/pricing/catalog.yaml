@@ -1,8 +1,10 @@
 # Per-provider cost catalog. Used by realdoc_bench.shared.pricing.meter.cost().
 #
-# Two unit kinds:
-#   - "page":   {usd: <$/page>}                       (most layout + parser providers)
-#   - "tokens": {input_usd_per_1k, output_usd_per_1k} (token-billed VLMs / agents)
+# Three unit kinds:
+#   - "page":    {usd: <$/page>}                       (most layout + parser providers)
+#   - "tokens":  {input_usd_per_1k, output_usd_per_1k} (token-billed VLMs / agents)
+#   - "credits": {usd_per_credit}                      (variable per-page billing, metered
+#                                                       from the credits the run reports)
 #
 # Only providers with a live consumer (a registered parser or layout processor)
 # are listed. Rates are public list prices as of 2026-05-13 and may be stale.
@@ -13,6 +15,9 @@
 extend_performance_v1_0_0:          {unit: page,   usd: 0.010}
 extend_performance_v2_0_0:          {unit: page,   usd: 0.020}
 extend_v2_0_0:                      {unit: page,   usd: 0.020}
+extend_light_v1_0_0:                {unit: page,   usd: 0.005}
+# Auto routes each page to Light (0.5 credits) or Performance (2 credits).
+extend_auto_v1_0_0:                 {unit: credits, usd_per_credit: 0.010}
 azure_di:                           {unit: page,   usd: 0.010}
 aws_textract:                       {unit: page,   usd: 0.015}
 reducto:                            {unit: page,   usd: 0.010}
@@ -27,6 +32,11 @@ mistral_ocr_4:                      {unit: page,   usd: 0.004}
 # ── VLMs invoked as parse providers (token billing) ─────────────────────────
 # Gemini 3.5 Flash standard pay-as-you-go: $1.50 / 1M input, $9.00 / 1M output.
 gemini_3_5_flash:                   {unit: tokens, input_usd_per_1k: 0.0015, output_usd_per_1k: 0.009}
+# OpenAI standard tier, short context (2026-11-05): output includes reasoning tokens.
+openai_gpt_6_astra:                 {unit: tokens, input_usd_per_1k: 0.010,  output_usd_per_1k: 0.050}
+openai_gpt_6_1_sol:                 {unit: tokens, input_usd_per_1k: 0.002,  output_usd_per_1k: 0.010}
+openai_gpt_6_1_terra:               {unit: tokens, input_usd_per_1k: 0.001,  output_usd_per_1k: 0.005}
+openai_gpt_6_luna:                  {unit: tokens, input_usd_per_1k: 0.0001, output_usd_per_1k: 0.0005}
 
 # ── Local / open-source providers (free at inference; cost left null) ────────
 gt_self:                            {unit: page,   usd: 0.0}
