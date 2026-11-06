@@ -22,9 +22,9 @@ Each mode reports cost and latency alongside quality.
 | Extend Parse Auto 1.0 † | 94.4% | 88.3% |
 | LlamaParse (Agentic) | 92.2% | 84.5% |
 | Reducto (Agentic) | 91.4% | 83.8% |
+| Extend Parse Light 1.0 † | 91.3% | 84.2% |
 | GPT-6.1 Terra † | 90.9% | 84.4% |
 | GPT-6 Astra † | 90.8% | 84.5% |
-| Extend Parse Light 1.0 | 90.5% | 82.7% |
 | GPT-6.1 Sol † | 90.4% | 83.9% |
 | Gemini 3.5 Flash | 89.3% | 82.2% |
 | LlamaParse | 89.2% | 80.8% |
@@ -34,7 +34,7 @@ Each mode reports cost and latency alongside quality.
 | GPT-6 Luna † | 88.4% | 79.9% |
 | AWS Textract | 70.7% | 54.0% |
 
-† Added from a 2026-11-05 run; other rows are from earlier runs. Reruns move scores by about a point, so compare rows within the same run when the gap is small.
+† From a 2026-11-05 run; other rows are from earlier runs. Reruns move scores by about a point, so compare rows within the same run when the gap is small.
 
 ## Layout Leaderboard
 | **Model** | **N** | **Strict F1** | **Adjusted F1** | **Macro F1** | **Precision** | **Recall** |
